@@ -11,6 +11,7 @@ import (
         "log"
         "net/http"
         "os/exec"
+        "regexp"
         "strconv"
         "strings"
 //      "fmt"
@@ -227,23 +228,27 @@ func parseNicstatOutput(out string) (error) {
 }
 
 func parseUptimeOutput(out string) (error) {
-    line := strings.Split(out, "\n")
-    parsedLine := strings.Fields(line[0])
-    load1, err := strconv.ParseFloat(parsedLine[9], 64)
+    // we will use regex in order to be sure to catch good numbers
+    r,_ := regexp.Compile(`load average: (\d.\d+), (\d.\d+), (\d.\d+)`)
+    loads := r.FindStringSubmatch(out)
+
+    load1, err := strconv.ParseFloat(loads[1], 64)
     if err != nil {
         return err
     }
-    load5, err := strconv.ParseFloat(parsedLine[10], 64)
+    load5, err := strconv.ParseFloat(loads[2], 64)
     if err != nil {
         return err
     }
-    load15, err := strconv.ParseFloat(parsedLine[11], 64)
+    load15, err := strconv.ParseFloat(loads[3], 64)
     if err != nil {
         return err
     }
+
     LoadAverage1.Set(load1)
     LoadAverage5.Set(load5)
     LoadAverage15.Set(load15)
+
     return nil
 }
 
