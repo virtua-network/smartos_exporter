@@ -21,7 +21,7 @@ import (
 
 var (
     // Global variables
-    exporterPort := ":9100"
+    exporterPort = ":9100"
     // Metrics definitions
     gzCpuUsage = prometheus.NewGaugeVec(prometheus.GaugeOpts{
         Name: "smartos_gz_cpu_usage_total",
@@ -59,7 +59,7 @@ var (
 
 func init() {
     // Metrics have to be registered to be exposed:
-    gz, _ := isGlobalZone()
+    gz := isGlobalZone()
     if gz == 1 {
         prometheus.MustRegister(gzCpuUsage)
         prometheus.MustRegister(gzFreeMem)
@@ -283,7 +283,7 @@ func parseZpoolStatusOutput(out string) (error) {
 
 func init() {
     // Metrics have to be registered to be exposed:
-    gz, _ := isGlobalZone()
+    gz := isGlobalZone()
     if gz == 1 {
         prometheus.MustRegister(gzCpuUsage)
         prometheus.MustRegister(gzFreeMem)
@@ -298,8 +298,8 @@ func init() {
 }
 
 func main() {
-    ret, _ := isGlobalZone()
-    if ret == 1 {
+    gz := isGlobalZone()
+    if gz == 1 {
         mpstat()
         vmstat()
         nicstat()
