@@ -68,7 +68,7 @@ func init() {
         prometheus.MustRegister(gzZpoolList)
     } else {
         // not yet implemented
-        log.Fatal("not yet implemented")
+        log.Fatal("zone statistics gathering is not yet implemented.")
     }
 }
 
