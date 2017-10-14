@@ -55,23 +55,6 @@ var (
     )
 )
 
-// program start
-
-func init() {
-    // Metrics have to be registered to be exposed:
-    gz := isGlobalZone()
-    if gz == 1 {
-        prometheus.MustRegister(gzCpuUsage)
-        prometheus.MustRegister(gzFreeMem)
-        prometheus.MustRegister(gzMlagUsage)
-        prometheus.MustRegister(gzDiskErrors)
-        prometheus.MustRegister(gzZpoolList)
-    } else {
-        // not yet implemented
-        log.Fatal("zone statistics gathering is not yet implemented.")
-    }
-}
-
 // Global Helpers
 
 // try to determine if its executed inside the GZ or not.
