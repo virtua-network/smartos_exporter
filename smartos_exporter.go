@@ -23,11 +23,31 @@ var (
     // Global variables
     exporterPort = ":9100"
     // Metrics definitions
+    // common metrics
+    LoadAverage1 = prometheus.NewGauge(prometheus.GaugeOpts{
+        Name: "smartos_cpu_load1",
+        Help: "CPU load average 1 minute.",
+    })
+    LoadAverage5 = prometheus.NewGauge(prometheus.GaugeOpts{
+        Name: "smartos_cpu_load5",
+        Help: "CPU load average 5 minutes.",
+    })
+    LoadAverage15 = prometheus.NewGauge(prometheus.GaugeOpts{
+        Name: "smartos_cpu_load15",
+        Help: "CPU load average 15 minutes.",
+    })
+    // global zone metrics
     gzCpuUsage = prometheus.NewGaugeVec(prometheus.GaugeOpts{
         Name: "smartos_gz_cpu_usage_total",
         Help: "CPU usage exposed in percent.",
         },
         []string{"cpu","type"},
+    )
+    gzDiskErrors = prometheus.NewCounterVec(prometheus.CounterOpts{
+        Name: "smartos_gz_disk_errors_total",
+        Help: "Number of hardware disk errors.",
+        },
+        []string{"device","type"},
     )
     gzFreeMem = prometheus.NewGaugeVec(prometheus.GaugeOpts{
         Name: "smartos_gz_memory_free_bytes_total",
@@ -47,12 +67,7 @@ var (
         },
         []string{"zpool","type"},
     )
-    gzDiskErrors = prometheus.NewCounterVec(prometheus.CounterOpts{
-        Name: "smartos_gz_disk_errors_total",
-        Help: "Number of hardware disk errors.",
-        },
-        []string{"device","type"},
-    )
+    // zone metrics
 )
 
 // Global Helpers
@@ -101,6 +116,17 @@ func nicstat() {
         log.Fatal(eerr)
     }
     perr := parseNicstatOutput(string(out))
+    if perr != nil {
+        log.Fatal(perr)
+    }
+}
+
+func uptime() {
+    out, eerr := exec.Command("uptime").Output()
+    if eerr != nil {
+        log.Fatal(eerr)
+    }
+    perr := parseUptimeOutput(string(out))
     if perr != nil {
         log.Fatal(perr)
     }
@@ -200,6 +226,27 @@ func parseNicstatOutput(out string) (error) {
     return nil
 }
 
+func parseUptimeOutput(out string) (error) {
+    line := strings.Split(out, "\n")
+    parsedLine := strings.Fields(line[0])
+    load1, err := strconv.ParseFloat(parsedLine[9], 64)
+    if err != nil {
+        return err
+    }
+    load5, err := strconv.ParseFloat(parsedLine[10], 64)
+    if err != nil {
+        return err
+    }
+    load15, err := strconv.ParseFloat(parsedLine[11], 64)
+    if err != nil {
+        return err
+    }
+    LoadAverage1.Set(load1)
+    LoadAverage5.Set(load5)
+    LoadAverage15.Set(load15)
+    return nil
+}
+
 func parseVmstatOutput(out string) (error) {
     outlines := strings.Split(out, "\n")
     l := len(outlines)
@@ -269,10 +316,13 @@ func init() {
     gz := isGlobalZone()
     if gz == 1 {
         prometheus.MustRegister(gzCpuUsage)
+        prometheus.MustRegister(gzDiskErrors)
         prometheus.MustRegister(gzFreeMem)
         prometheus.MustRegister(gzMlagUsage)
-        prometheus.MustRegister(gzDiskErrors)
         prometheus.MustRegister(gzZpoolList)
+        prometheus.MustRegister(LoadAverage1)
+        prometheus.MustRegister(LoadAverage5)
+        prometheus.MustRegister(LoadAverage15)
     } else {
         // not yet implemented
         // XXX
@@ -283,10 +333,11 @@ func init() {
 func main() {
     gz := isGlobalZone()
     if gz == 1 {
-        mpstat()
-        vmstat()
-        nicstat()
         iostat()
+        mpstat()
+        nicstat()
+        uptime()
+        vmstat()
         zpoolList()
     } else {
         // not yet implemented
