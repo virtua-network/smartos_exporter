@@ -27,12 +27,6 @@ var (
     exporterPort = ":9100"
     // Metrics definitions
     // global zone metrics
-    gzDiskErrors = prometheus.NewCounterVec(prometheus.CounterOpts{
-        Name: "smartos_gz_disk_errors_total",
-        Help: "Number of hardware disk errors.",
-        },
-        []string{"device","type"},
-    )
     gzFreeMem = prometheus.NewGaugeVec(prometheus.GaugeOpts{
         Name: "smartos_gz_memory_free_bytes_total",
         Help: "Total free memory (both RAM and Swap) of the CN.",
@@ -72,16 +66,6 @@ func isGlobalZone() (int) {
 }
 
 // SmartOS command / tool callers
-func iostat() {
-    out, eerr := exec.Command("iostat", "-en").Output()
-    if eerr != nil {
-        log.Fatal(eerr)
-    }
-    perr := parseIostatOutput(string(out))
-    if perr != nil {
-        log.Fatal(perr)
-    }
-}
 
 func nicstat() {
     out, eerr := exec.Command("nicstat", "-i", "aggr0").Output()
@@ -117,31 +101,6 @@ func zpoolList() {
 }
 
 // Parsers
-
-func parseIostatOutput(out string) (error) {
-    outlines := strings.Split(out, "\n")
-    l := len(outlines)
-    for _, line := range outlines[2:l-1] {
-        parsedLine := strings.Fields(line)
-        deviceName := parsedLine[4]
-        softErr, err := strconv.ParseFloat(parsedLine[0], 64)
-        if err != nil {
-            return err
-        }
-        hardErr, err := strconv.ParseFloat(parsedLine[1], 64)
-        if err != nil {
-            return err
-        }
-        trnErr, err := strconv.ParseFloat(parsedLine[2], 64)
-        if err != nil {
-            return err
-        }
-        gzDiskErrors.With(prometheus.Labels{"device":deviceName,"type":"soft"}).Add(softErr)
-        gzDiskErrors.With(prometheus.Labels{"device":deviceName,"type":"hard"}).Add(hardErr)
-        gzDiskErrors.With(prometheus.Labels{"device":deviceName,"type":"trn"}).Add(trnErr)
-    }
-    return nil
-}
 
 func parseNicstatOutput(out string) (error) {
     outlines := strings.Split(out, "\n")
@@ -237,7 +196,6 @@ func init() {
 }
 
 func main() {
-    prometheus.MustRegister(gzDiskErrors)
     prometheus.MustRegister(gzFreeMem)
     prometheus.MustRegister(gzMlagUsage)
     prometheus.MustRegister(gzZpoolList)
@@ -248,7 +206,9 @@ func main() {
     cpuusage, _ := collector.NewGzCpuUsageExporter()
     prometheus.MustRegister(cpuusage)
 
-    iostat()
+    diskerrors, _ := collector.NewGzDiskErrorsExporter()
+    prometheus.MustRegister(diskerrors)
+
     nicstat()
     vmstat()
     zpoolList()
