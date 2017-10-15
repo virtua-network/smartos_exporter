@@ -73,9 +73,9 @@ func (e *gzCPUUsageExporter) parseMpstatOutput(out string) (error) {
         if err != nil {
             return err
         }
-        e.gzCPUUsage.With(prometheus.Labels{"cpu": cpuId, "type":"user"}).Set(cpuUsr)
-        e.gzCPUUsage.With(prometheus.Labels{"cpu": cpuId, "type":"system"}).Set(cpuSys)
-        e.gzCPUUsage.With(prometheus.Labels{"cpu": cpuId, "type":"idle"}).Set(cpuIdl)
+        e.gzCPUUsage.With(prometheus.Labels{"cpu": cpuId, "mode":"user"}).Set(cpuUsr)
+        e.gzCPUUsage.With(prometheus.Labels{"cpu": cpuId, "mode":"system"}).Set(cpuSys)
+        e.gzCPUUsage.With(prometheus.Labels{"cpu": cpuId, "mode":"idle"}).Set(cpuIdl)
         //fmt.Printf("cpuId : %d, cpuUsr : %d, cpuSys : %d \n", cpuId, cpuUsr, cpuSys)
     }
     return nil
