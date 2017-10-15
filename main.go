@@ -27,12 +27,6 @@ var (
     exporterPort = ":9100"
     // Metrics definitions
     // global zone metrics
-    gzMlagUsage = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-        Name: "smartos_gz_network_mlag_bytes_total",
-        Help: "MLAG (aggr0) usage of the CN.",
-        },
-        []string{"device","type"},
-    )
     gzZpoolList = prometheus.NewGaugeVec(prometheus.GaugeOpts{
         Name: "smartos_gz_zpool_list_total",
         Help: "ZFS zpool list summary.",
@@ -61,17 +55,6 @@ func isGlobalZone() (int) {
 
 // SmartOS command / tool callers
 
-func nicstat() {
-    out, eerr := exec.Command("nicstat", "-i", "aggr0").Output()
-    if eerr != nil {
-        log.Fatal(eerr)
-    }
-    perr := parseNicstatOutput(string(out))
-    if perr != nil {
-        log.Fatal(perr)
-    }
-}
-
 func zpoolList() {
     out, eerr := exec.Command("zpool", "list", "-p", "zones").Output()
     if eerr != nil {
@@ -84,25 +67,6 @@ func zpoolList() {
 }
 
 // Parsers
-
-func parseNicstatOutput(out string) (error) {
-    outlines := strings.Split(out, "\n")
-    l := len(outlines)
-    for _, line := range outlines[1:l-1] {
-        parsedLine := strings.Fields(line)
-        readKb, err := strconv.ParseFloat(parsedLine[2], 64)
-        if err != nil {
-            return err
-        }
-        writeKb, err := strconv.ParseFloat(parsedLine[3], 64)
-        if err != nil {
-            return err
-        }
-        gzMlagUsage.With(prometheus.Labels{"device":"aggr0", "type":"read"}).Set(readKb)
-        gzMlagUsage.With(prometheus.Labels{"device":"aggr0", "type":"write"}).Set(writeKb)
-    }
-    return nil
-}
 
 func parseZpoolStatusOutput(out string) (error) {
     outlines := strings.Split(out, "\n")
@@ -160,11 +124,13 @@ func init() {
 }
 
 func main() {
-    prometheus.MustRegister(gzMlagUsage)
     prometheus.MustRegister(gzZpoolList)
 
     freemem, _ := collector.NewGzFreeMemExporter()
     prometheus.MustRegister(freemem)
+
+    mlagusage, _ := collector.NewGzMlagUsageExporter()
+    prometheus.MustRegister(mlagusage)
 
     loadavg, _ := collector.NewLoadAverageExporter()
     prometheus.MustRegister(loadavg)
@@ -175,7 +141,6 @@ func main() {
     diskerrors, _ := collector.NewGzDiskErrorsExporter()
     prometheus.MustRegister(diskerrors)
 
-    nicstat()
     zpoolList()
 
     // The Handler function provides a default handler to expose metrics
