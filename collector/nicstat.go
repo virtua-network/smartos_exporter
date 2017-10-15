@@ -38,7 +38,9 @@ func (e *gzMlagUsageExporter) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (e *gzMlagUsageExporter) nicstat() {
-    out, eerr := exec.Command("nicstat", "-i", "aggr0").Output()
+    // XXX needs enhancement :
+    // use of nicstat will wait 2 seconds in order to collect statistics
+    out, eerr := exec.Command("nicstat", "-i", "aggr0", "1", "2").Output()
     if eerr != nil {
         log.Fatal(eerr)
     }
@@ -51,7 +53,7 @@ func (e *gzMlagUsageExporter) nicstat() {
 func (e *gzMlagUsageExporter) parseNicstatOutput(out string) (error) {
     outlines := strings.Split(out, "\n")
     l := len(outlines)
-    for _, line := range outlines[1:l-1] {
+    for _, line := range outlines[2:l-1] {
         parsedLine := strings.Fields(line)
         readKb, err := strconv.ParseFloat(parsedLine[2], 64)
         if err != nil {
