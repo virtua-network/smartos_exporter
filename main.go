@@ -27,12 +27,6 @@ var (
     exporterPort = ":9100"
     // Metrics definitions
     // global zone metrics
-    gzCpuUsage = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-        Name: "smartos_gz_cpu_usage_total",
-        Help: "CPU usage exposed in percent.",
-        },
-        []string{"cpu","type"},
-    )
     gzDiskErrors = prometheus.NewCounterVec(prometheus.CounterOpts{
         Name: "smartos_gz_disk_errors_total",
         Help: "Number of hardware disk errors.",
@@ -84,17 +78,6 @@ func iostat() {
         log.Fatal(eerr)
     }
     perr := parseIostatOutput(string(out))
-    if perr != nil {
-        log.Fatal(perr)
-    }
-}
-
-func mpstat() {
-    out, eerr := exec.Command("mpstat", "1", "1").Output()
-    if eerr != nil {
-        log.Fatal(eerr)
-    }
-    perr := parseMpstatOutput(string(out))
     if perr != nil {
         log.Fatal(perr)
     }
@@ -156,32 +139,6 @@ func parseIostatOutput(out string) (error) {
         gzDiskErrors.With(prometheus.Labels{"device":deviceName,"type":"soft"}).Add(softErr)
         gzDiskErrors.With(prometheus.Labels{"device":deviceName,"type":"hard"}).Add(hardErr)
         gzDiskErrors.With(prometheus.Labels{"device":deviceName,"type":"trn"}).Add(trnErr)
-    }
-    return nil
-}
-
-func parseMpstatOutput(out string) (error) {
-    outlines := strings.Split(out, "\n")
-    l := len(outlines)
-    for _, line := range outlines[1:l-1] {
-        parsedLine := strings.Fields(line)
-        cpuId := parsedLine[0]
-        cpuUsr, err := strconv.ParseFloat(parsedLine[12], 64)
-        if err != nil {
-            return err
-        }
-        cpuSys, err := strconv.ParseFloat(parsedLine[13], 64)
-        if err != nil {
-            return err
-        }
-        cpuIdl, err := strconv.ParseFloat(parsedLine[15], 64)
-        if err != nil {
-            return err
-        }
-        gzCpuUsage.With(prometheus.Labels{"cpu": cpuId, "type":"user"}).Set(cpuUsr)
-        gzCpuUsage.With(prometheus.Labels{"cpu": cpuId, "type":"system"}).Set(cpuSys)
-        gzCpuUsage.With(prometheus.Labels{"cpu": cpuId, "type":"idle"}).Set(cpuIdl)
-        //fmt.Printf("cpuId : %d, cpuUsr : %d, cpuSys : %d \n", cpuId, cpuUsr, cpuSys)
     }
     return nil
 }
@@ -280,7 +237,6 @@ func init() {
 }
 
 func main() {
-    prometheus.MustRegister(gzCpuUsage)
     prometheus.MustRegister(gzDiskErrors)
     prometheus.MustRegister(gzFreeMem)
     prometheus.MustRegister(gzMlagUsage)
@@ -289,8 +245,10 @@ func main() {
     loadavg, _ := collector.NewLoadAverageExporter()
     prometheus.MustRegister(loadavg)
 
+    cpuusage, _ := collector.NewGzCpuUsageExporter()
+    prometheus.MustRegister(cpuusage)
+
     iostat()
-    mpstat()
     nicstat()
     vmstat()
     zpoolList()
