@@ -19,12 +19,12 @@ type gzDiskErrorsExporter struct {
     gzDiskErrors      *prometheus.CounterVec
 }
 
-func NewGzDiskErrorsExporter() (*gzDiskErrorsExporter, error) {
+func NewGZDiskErrorsExporter() (*gzDiskErrorsExporter, error) {
     return &gzDiskErrorsExporter{
         gzDiskErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
-            Name: "smartos_gz_disk_errors_total",
+            Name: "smartos_disk_errs_total",
             Help: "Number of hardware disk errors.",
-        }, []string{"device","type"}),
+        }, []string{"device","error_type"}),
     }, nil
 }
 
@@ -66,9 +66,9 @@ func (e *gzDiskErrorsExporter) parseIostatOutput(out string) (error) {
         if err != nil {
             return err
         }
-        e.gzDiskErrors.With(prometheus.Labels{"device":deviceName,"type":"soft"}).Add(softErr)
-        e.gzDiskErrors.With(prometheus.Labels{"device":deviceName,"type":"hard"}).Add(hardErr)
-        e.gzDiskErrors.With(prometheus.Labels{"device":deviceName,"type":"trn"}).Add(trnErr)
+        e.gzDiskErrors.With(prometheus.Labels{"device":deviceName,"error_type":"soft"}).Add(softErr)
+        e.gzDiskErrors.With(prometheus.Labels{"device":deviceName,"error_type":"hard"}).Add(hardErr)
+        e.gzDiskErrors.With(prometheus.Labels{"device":deviceName,"error_type":"trn"}).Add(trnErr)
     }
     return nil
 }

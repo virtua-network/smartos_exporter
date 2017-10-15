@@ -15,29 +15,36 @@ import (
     "github.com/prometheus/client_golang/prometheus"
 )
 
-type gzMlagUsageExporter struct {
-    gzMlagUsage      *prometheus.GaugeVec
+type gzMLAGUsageExporter struct {
+    gzMLAGUsageRead    *prometheus.GaugeVec
+    gzMLAGUsageWrite   *prometheus.GaugeVec
 }
 
-func NewGzMlagUsageExporter() (*gzMlagUsageExporter, error) {
-    return &gzMlagUsageExporter{
-        gzMlagUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-            Name: "smartos_gz_network_mlag_bytes_total",
-            Help: "MLAG (aggr0) usage of the CN.",
-        }, []string{"device","type"}),
+func NewGZMLAGUsageExporter() (*gzMLAGUsageExporter, error) {
+    return &gzMLAGUsageExporter{
+        gzMLAGUsageRead: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+            Name: "smartos_network_mlag_receive_kilobytes",
+            Help: "MLAG (aggr0) receive statistic in KBytes.",
+        }, []string{"device"}),
+        gzMLAGUsageWrite: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+            Name: "smartos_network_mlag_transmit_kilobytes",
+            Help: "MLAG (aggr0) transmit statistic in KBytes.",
+        }, []string{"device"}),
     }, nil
 }
 
-func (e *gzMlagUsageExporter) Describe(ch chan<- *prometheus.Desc) {
-    e.gzMlagUsage.Describe(ch)
+func (e *gzMLAGUsageExporter) Describe(ch chan<- *prometheus.Desc) {
+    e.gzMLAGUsageRead.Describe(ch)
+    e.gzMLAGUsageWrite.Describe(ch)
 }
 
-func (e *gzMlagUsageExporter) Collect(ch chan<- prometheus.Metric) {
+func (e *gzMLAGUsageExporter) Collect(ch chan<- prometheus.Metric) {
     e.nicstat()
-    e.gzMlagUsage.Collect(ch)
+    e.gzMLAGUsageRead.Collect(ch)
+    e.gzMLAGUsageWrite.Collect(ch)
 }
 
-func (e *gzMlagUsageExporter) nicstat() {
+func (e *gzMLAGUsageExporter) nicstat() {
     // XXX needs enhancement :
     // use of nicstat will wait 2 seconds in order to collect statistics
     out, eerr := exec.Command("nicstat", "-i", "aggr0", "1", "2").Output()
@@ -50,7 +57,7 @@ func (e *gzMlagUsageExporter) nicstat() {
     }
 }
 
-func (e *gzMlagUsageExporter) parseNicstatOutput(out string) (error) {
+func (e *gzMLAGUsageExporter) parseNicstatOutput(out string) (error) {
     outlines := strings.Split(out, "\n")
     l := len(outlines)
     for _, line := range outlines[2:l-1] {
@@ -63,8 +70,8 @@ func (e *gzMlagUsageExporter) parseNicstatOutput(out string) (error) {
         if err != nil {
             return err
         }
-        e.gzMlagUsage.With(prometheus.Labels{"device":"aggr0", "type":"read"}).Set(readKb)
-        e.gzMlagUsage.With(prometheus.Labels{"device":"aggr0", "type":"write"}).Set(writeKb)
+        e.gzMLAGUsageRead.With(prometheus.Labels{"device":"aggr0"}).Set(readKb)
+        e.gzMLAGUsageWrite.With(prometheus.Labels{"device":"aggr0"}).Set(writeKb)
     }
     return nil
 }

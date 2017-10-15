@@ -19,12 +19,12 @@ type gzFreeMemExporter struct {
     gzFreeMem      *prometheus.GaugeVec
 }
 
-func NewGzFreeMemExporter() (*gzFreeMemExporter, error) {
+func NewGZFreeMemExporter() (*gzFreeMemExporter, error) {
     return &gzFreeMemExporter{
         gzFreeMem: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-            Name: "smartos_gz_memory_free_bytes_total",
+            Name: "smartos_memory_free_bytes",
             Help: "Total free memory (both RAM and Swap) of the CN.",
-        }, []string{"type"}),
+        }, []string{"memory"}),
     }, nil
 }
 
@@ -61,8 +61,8 @@ func (e *gzFreeMemExporter) parseVmstatOutput(out string) (error) {
         if err != nil {
             return err
         }
-        e.gzFreeMem.With(prometheus.Labels{"type":"swap"}).Set(freeSwap)
-        e.gzFreeMem.With(prometheus.Labels{"type":"ram"}).Set(freeRam)
+        e.gzFreeMem.With(prometheus.Labels{"memory":"swap"}).Set(freeSwap)
+        e.gzFreeMem.With(prometheus.Labels{"memory":"ram"}).Set(freeRam)
     }
     return nil
 }

@@ -57,23 +57,23 @@ func init() {
 
 func main() {
 
-    freemem, _ := collector.NewGzFreeMemExporter()
-    prometheus.MustRegister(freemem)
+    gzFreeMem, _ := collector.NewGZFreeMemExporter()
+    prometheus.MustRegister(gzFreeMem)
 
-    mlagusage, _ := collector.NewGzMlagUsageExporter()
-    prometheus.MustRegister(mlagusage)
+    gzMLAGUsage, _ := collector.NewGZMLAGUsageExporter()
+    prometheus.MustRegister(gzMLAGUsage)
 
-    loadavg, _ := collector.NewLoadAverageExporter()
-    prometheus.MustRegister(loadavg)
+    loadAvg, _ := collector.NewLoadAverageExporter()
+    prometheus.MustRegister(loadAvg)
 
-    cpuusage, _ := collector.NewGzCpuUsageExporter()
-    prometheus.MustRegister(cpuusage)
+    cpuUsage, _ := collector.NewGZCPUUsageExporter()
+    prometheus.MustRegister(cpuUsage)
 
-    diskerrors, _ := collector.NewGzDiskErrorsExporter()
-    prometheus.MustRegister(diskerrors)
+    gzDiskErrors, _ := collector.NewGZDiskErrorsExporter()
+    prometheus.MustRegister(gzDiskErrors)
 
-    zpoollist, _ := collector.NewGzZpoolListExporter()
-    prometheus.MustRegister(zpoollist)
+    gzZpoolList, _ := collector.NewGZZpoolListExporter()
+    prometheus.MustRegister(gzZpoolList)
 
     // The Handler function provides a default handler to expose metrics
     // via an HTTP server. "/metrics" is the usual endpoint for that.

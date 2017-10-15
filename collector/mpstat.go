@@ -16,29 +16,29 @@ import (
     "github.com/prometheus/client_golang/prometheus"
 )
 
-type gzCpuUsageExporter struct {
-    gzCpuUsage      *prometheus.GaugeVec
+type gzCPUUsageExporter struct {
+    gzCPUUsage      *prometheus.GaugeVec
 }
 
-func NewGzCpuUsageExporter() (*gzCpuUsageExporter, error) {
-    return &gzCpuUsageExporter{
-        gzCpuUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-            Name: "smartos_gz_cpu_usage_total",
+func NewGZCPUUsageExporter() (*gzCPUUsageExporter, error) {
+    return &gzCPUUsageExporter{
+        gzCPUUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+            Name: "smartos_cpu_usage_percents",
             Help: "CPU usage exposed in percent.",
-        }, []string{"cpu","type"}),
+        }, []string{"cpu","mode"}),
     }, nil
 }
 
-func (e *gzCpuUsageExporter) Describe(ch chan<- *prometheus.Desc) {
-    e.gzCpuUsage.Describe(ch)
+func (e *gzCPUUsageExporter) Describe(ch chan<- *prometheus.Desc) {
+    e.gzCPUUsage.Describe(ch)
 }
 
-func (e *gzCpuUsageExporter) Collect(ch chan<- prometheus.Metric) {
+func (e *gzCPUUsageExporter) Collect(ch chan<- prometheus.Metric) {
     e.mpstat()
-    e.gzCpuUsage.Collect(ch)
+    e.gzCPUUsage.Collect(ch)
 }
 
-func (e *gzCpuUsageExporter) mpstat() {
+func (e *gzCPUUsageExporter) mpstat() {
     // XXX needs enhancement :
     // use of mpstat will wait 2 seconds in order to collect statistics
     out, eerr := exec.Command("mpstat", "1", "2").Output()
@@ -51,7 +51,7 @@ func (e *gzCpuUsageExporter) mpstat() {
     }
 }
 
-func (e *gzCpuUsageExporter) parseMpstatOutput(out string) (error) {
+func (e *gzCPUUsageExporter) parseMpstatOutput(out string) (error) {
     // this regexp will remove all lines containing header labels
     r,_ := regexp.Compile(`(?m)[\r\n]+^.*CPU.*$`)
     result:= r.ReplaceAllString(out,"")
@@ -73,9 +73,9 @@ func (e *gzCpuUsageExporter) parseMpstatOutput(out string) (error) {
         if err != nil {
             return err
         }
-        e.gzCpuUsage.With(prometheus.Labels{"cpu": cpuId, "type":"user"}).Set(cpuUsr)
-        e.gzCpuUsage.With(prometheus.Labels{"cpu": cpuId, "type":"system"}).Set(cpuSys)
-        e.gzCpuUsage.With(prometheus.Labels{"cpu": cpuId, "type":"idle"}).Set(cpuIdl)
+        e.gzCPUUsage.With(prometheus.Labels{"cpu": cpuId, "mode":"user"}).Set(cpuUsr)
+        e.gzCPUUsage.With(prometheus.Labels{"cpu": cpuId, "mode":"system"}).Set(cpuSys)
+        e.gzCPUUsage.With(prometheus.Labels{"cpu": cpuId, "mode":"idle"}).Set(cpuIdl)
         //fmt.Printf("cpuId : %d, cpuUsr : %d, cpuSys : %d \n", cpuId, cpuUsr, cpuSys)
     }
     return nil
