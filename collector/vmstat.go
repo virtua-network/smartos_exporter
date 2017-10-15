@@ -38,7 +38,9 @@ func (e *gzFreeMemExporter) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (e *gzFreeMemExporter) vmstat() {
-    out, eerr := exec.Command("vmstat", "1", "1").Output()
+    // XXX needs enhancement :
+    // use of vmstat will wait 2 seconds in order to collect statistics
+    out, eerr := exec.Command("vmstat", "1", "2").Output()
     if eerr != nil {
         log.Fatal(eerr)
     }
@@ -51,7 +53,7 @@ func (e *gzFreeMemExporter) vmstat() {
 func (e *gzFreeMemExporter) parseVmstatOutput(out string) (error) {
     outlines := strings.Split(out, "\n")
     l := len(outlines)
-    for _, line := range outlines[2:l-1] {
+    for _, line := range outlines[3:l-1] {
         parsedLine := strings.Fields(line)
         freeSwap, err := strconv.ParseFloat(parsedLine[3], 64)
         if err != nil {
