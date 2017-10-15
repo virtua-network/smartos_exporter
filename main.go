@@ -8,35 +8,24 @@
 package main
 
 import (
-        "log"
-        "net/http"
-        "os/exec"
-        "regexp"
-        "strconv"
-        "strings"
-//      "fmt"
-        // Prometheus Go toolset
-        "github.com/prometheus/client_golang/prometheus"
-        "github.com/prometheus/client_golang/prometheus/promhttp"
+    "log"
+    "net/http"
+    "os/exec"
+    "strconv"
+    "strings"
+//  "fmt"
+
+    "github.com/virtua-network/smartos_exporter/collector"
+
+    // Prometheus Go toolset
+    "github.com/prometheus/client_golang/prometheus"
+    "github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
     // Global variables
     exporterPort = ":9100"
     // Metrics definitions
-    // common metrics
-    LoadAverage1 = prometheus.NewGauge(prometheus.GaugeOpts{
-        Name: "smartos_cpu_load1",
-        Help: "CPU load average 1 minute.",
-    })
-    LoadAverage5 = prometheus.NewGauge(prometheus.GaugeOpts{
-        Name: "smartos_cpu_load5",
-        Help: "CPU load average 5 minutes.",
-    })
-    LoadAverage15 = prometheus.NewGauge(prometheus.GaugeOpts{
-        Name: "smartos_cpu_load15",
-        Help: "CPU load average 15 minutes.",
-    })
     // global zone metrics
     gzCpuUsage = prometheus.NewGaugeVec(prometheus.GaugeOpts{
         Name: "smartos_gz_cpu_usage_total",
@@ -117,17 +106,6 @@ func nicstat() {
         log.Fatal(eerr)
     }
     perr := parseNicstatOutput(string(out))
-    if perr != nil {
-        log.Fatal(perr)
-    }
-}
-
-func uptime() {
-    out, eerr := exec.Command("uptime").Output()
-    if eerr != nil {
-        log.Fatal(eerr)
-    }
-    perr := parseUptimeOutput(string(out))
     if perr != nil {
         log.Fatal(perr)
     }
@@ -227,31 +205,6 @@ func parseNicstatOutput(out string) (error) {
     return nil
 }
 
-func parseUptimeOutput(out string) (error) {
-    // we will use regex in order to be sure to catch good numbers
-    r,_ := regexp.Compile(`load average: (\d.\d+), (\d.\d+), (\d.\d+)`)
-    loads := r.FindStringSubmatch(out)
-
-    load1, err := strconv.ParseFloat(loads[1], 64)
-    if err != nil {
-        return err
-    }
-    load5, err := strconv.ParseFloat(loads[2], 64)
-    if err != nil {
-        return err
-    }
-    load15, err := strconv.ParseFloat(loads[3], 64)
-    if err != nil {
-        return err
-    }
-
-    LoadAverage1.Set(load1)
-    LoadAverage5.Set(load5)
-    LoadAverage15.Set(load15)
-
-    return nil
-}
-
 func parseVmstatOutput(out string) (error) {
     outlines := strings.Split(out, "\n")
     l := len(outlines)
@@ -319,16 +272,7 @@ func parseZpoolStatusOutput(out string) (error) {
 func init() {
     // Metrics have to be registered to be exposed:
     gz := isGlobalZone()
-    if gz == 1 {
-        prometheus.MustRegister(gzCpuUsage)
-        prometheus.MustRegister(gzDiskErrors)
-        prometheus.MustRegister(gzFreeMem)
-        prometheus.MustRegister(gzMlagUsage)
-        prometheus.MustRegister(gzZpoolList)
-        prometheus.MustRegister(LoadAverage1)
-        prometheus.MustRegister(LoadAverage5)
-        prometheus.MustRegister(LoadAverage15)
-    } else {
+    if gz == 0 {
         // not yet implemented
         // XXX
         log.Fatal("zone statistics gathering is not yet implemented.")
@@ -336,19 +280,20 @@ func init() {
 }
 
 func main() {
-    gz := isGlobalZone()
-    if gz == 1 {
-        iostat()
-        mpstat()
-        nicstat()
-        uptime()
-        vmstat()
-        zpoolList()
-    } else {
-        // not yet implemented
-        // XXX
-        log.Fatal("zone statistics gathering is not yet implemented.")
-    }
+    prometheus.MustRegister(gzCpuUsage)
+    prometheus.MustRegister(gzDiskErrors)
+    prometheus.MustRegister(gzFreeMem)
+    prometheus.MustRegister(gzMlagUsage)
+    prometheus.MustRegister(gzZpoolList)
+
+    loadavg, _ := collector.NewLoadAverageExporter()
+    prometheus.MustRegister(loadavg)
+
+    iostat()
+    mpstat()
+    nicstat()
+    vmstat()
+    zpoolList()
 
     // The Handler function provides a default handler to expose metrics
     // via an HTTP server. "/metrics" is the usual endpoint for that.
