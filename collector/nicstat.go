@@ -38,6 +38,8 @@ func (e *gzMlagUsageExporter) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (e *gzMlagUsageExporter) nicstat() {
+    // XXX needs enhancement :
+    // use of nicstat will wait 2 seconds in order to collect statistics
     out, eerr := exec.Command("nicstat", "-i", "aggr0", "1", "2").Output()
     if eerr != nil {
         log.Fatal(eerr)
