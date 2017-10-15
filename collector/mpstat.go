@@ -4,14 +4,12 @@
 //  - gather CPU metrics
 //  - feed the collector
 
-// XXX COLLECTOR BROKEN
-// $(mpstat 1 1) always returns the same value
-
 package collector
 
 import (
     "log"
     "os/exec"
+    "regexp"
     "strconv"
     "strings"
     // Prometheus Go toolset
@@ -41,7 +39,9 @@ func (e *gzCpuUsageExporter) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (e *gzCpuUsageExporter) mpstat() {
-    out, eerr := exec.Command("mpstat", "1", "1").Output()
+    // XXX needs enhancement :
+    // use of mpstat will wait 2 seconds in order to collect statistics
+    out, eerr := exec.Command("mpstat", "1", "2").Output()
     if eerr != nil {
         log.Fatal(eerr)
     }
@@ -52,7 +52,11 @@ func (e *gzCpuUsageExporter) mpstat() {
 }
 
 func (e *gzCpuUsageExporter) parseMpstatOutput(out string) (error) {
-    outlines := strings.Split(out, "\n")
+    // this regexp will remove all lines containing header labels
+    r,_ := regexp.Compile(`(?m)[\r\n]+^.*CPU.*$`)
+    result:= r.ReplaceAllString(out,"")
+
+    outlines := strings.Split(result, "\n")
     l := len(outlines)
     for _, line := range outlines[1:l-1] {
         parsedLine := strings.Fields(line)
