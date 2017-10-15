@@ -22,9 +22,9 @@ type gzDiskErrorsExporter struct {
 func NewGZDiskErrorsExporter() (*gzDiskErrorsExporter, error) {
     return &gzDiskErrorsExporter{
         gzDiskErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
-            Name: "smartos_gz_disk_errors_total",
+            Name: "smartos_disk_errs_total",
             Help: "Number of hardware disk errors.",
-        }, []string{"device","type"}),
+        }, []string{"device","error"}),
     }, nil
 }
 

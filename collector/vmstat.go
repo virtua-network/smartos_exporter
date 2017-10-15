@@ -22,9 +22,9 @@ type gzFreeMemExporter struct {
 func NewGZFreeMemExporter() (*gzFreeMemExporter, error) {
     return &gzFreeMemExporter{
         gzFreeMem: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-            Name: "smartos_gz_memory_free_bytes_total",
+            Name: "smartos_memory_free_bytes",
             Help: "Total free memory (both RAM and Swap) of the CN.",
-        }, []string{"type"}),
+        }, []string{"memory"}),
     }, nil
 }
 

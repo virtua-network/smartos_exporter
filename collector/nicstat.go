@@ -16,25 +16,32 @@ import (
 )
 
 type gzMLAGUsageExporter struct {
-    gzMLAGUsage      *prometheus.GaugeVec
+    gzMLAGUsageRead    *prometheus.GaugeVec
+    gzMLAGUsageWrite   *prometheus.GaugeVec
 }
 
 func NewGZMLAGUsageExporter() (*gzMLAGUsageExporter, error) {
     return &gzMLAGUsageExporter{
-        gzMLAGUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-            Name: "smartos_gz_network_mlag_bytes_total",
-            Help: "MLAG (aggr0) usage of the CN.",
-        }, []string{"device","type"}),
+        gzMLAGUsageRead: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+            Name: "smartos_network_mlag_receive_kilobytes",
+            Help: "MLAG (aggr0) receive statistic in KBytes.",
+        }, []string{"device"}),
+        gzMLAGUsageWrite: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+            Name: "smartos_network_mlag_transmit_kilobytes",
+            Help: "MLAG (aggr0) transmit statistic in KBytes.",
+        }, []string{"device"}),
     }, nil
 }
 
 func (e *gzMLAGUsageExporter) Describe(ch chan<- *prometheus.Desc) {
-    e.gzMLAGUsage.Describe(ch)
+    e.gzMLAGUsageRead.Describe(ch)
+    e.gzMLAGUsageWrite.Describe(ch)
 }
 
 func (e *gzMLAGUsageExporter) Collect(ch chan<- prometheus.Metric) {
     e.nicstat()
-    e.gzMLAGUsage.Collect(ch)
+    e.gzMLAGUsageRead.Collect(ch)
+    e.gzMLAGUsageWrite.Collect(ch)
 }
 
 func (e *gzMLAGUsageExporter) nicstat() {
@@ -63,8 +70,8 @@ func (e *gzMLAGUsageExporter) parseNicstatOutput(out string) (error) {
         if err != nil {
             return err
         }
-        e.gzMLAGUsage.With(prometheus.Labels{"device":"aggr0", "type":"read"}).Set(readKb)
-        e.gzMLAGUsage.With(prometheus.Labels{"device":"aggr0", "type":"write"}).Set(writeKb)
+        e.gzMLAGUsageRead.With(prometheus.Labels{"device":"aggr0"}).Set(readKb)
+        e.gzMLAGUsageWrite.With(prometheus.Labels{"device":"aggr0"}).Set(writeKb)
     }
     return nil
 }

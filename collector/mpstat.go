@@ -23,9 +23,9 @@ type gzCPUUsageExporter struct {
 func NewGZCPUUsageExporter() (*gzCPUUsageExporter, error) {
     return &gzCPUUsageExporter{
         gzCPUUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-            Name: "smartos_gz_cpu_usage_total",
+            Name: "smartos_cpu_usage_percents",
             Help: "CPU usage exposed in percent.",
-        }, []string{"cpu","type"}),
+        }, []string{"cpu","mode"}),
     }, nil
 }
 
