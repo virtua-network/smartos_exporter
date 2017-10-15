@@ -57,7 +57,7 @@ func init() {
 
 func main() {
 
-    gzFreeMem, _ := collector.NewGzFreeMemExporter()
+    gzFreeMem, _ := collector.NewGZFreeMemExporter()
     prometheus.MustRegister(gzFreeMem)
 
     gzMLAGUsage, _ := collector.NewGZMLAGUsageExporter()

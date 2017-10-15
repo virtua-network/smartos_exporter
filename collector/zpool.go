@@ -19,7 +19,7 @@ type gzZpoolListExporter struct {
     gzZpoolList      *prometheus.GaugeVec
 }
 
-func NewGzZpoolListExporter() (*gzZpoolListExporter, error) {
+func NewGZZpoolListExporter() (*gzZpoolListExporter, error) {
     return &gzZpoolListExporter{
         gzZpoolList: prometheus.NewGaugeVec(prometheus.GaugeOpts{
             Name: "smartos_gz_zpool_list_total",

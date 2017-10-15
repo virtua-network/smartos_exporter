@@ -19,7 +19,7 @@ type gzFreeMemExporter struct {
     gzFreeMem      *prometheus.GaugeVec
 }
 
-func NewGzFreeMemExporter() (*gzFreeMemExporter, error) {
+func NewGZFreeMemExporter() (*gzFreeMemExporter, error) {
     return &gzFreeMemExporter{
         gzFreeMem: prometheus.NewGaugeVec(prometheus.GaugeOpts{
             Name: "smartos_gz_memory_free_bytes_total",

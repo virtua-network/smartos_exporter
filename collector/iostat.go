@@ -19,7 +19,7 @@ type gzDiskErrorsExporter struct {
     gzDiskErrors      *prometheus.CounterVec
 }
 
-func NewGzDiskErrorsExporter() (*gzDiskErrorsExporter, error) {
+func NewGZDiskErrorsExporter() (*gzDiskErrorsExporter, error) {
     return &gzDiskErrorsExporter{
         gzDiskErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
             Name: "smartos_gz_disk_errors_total",
