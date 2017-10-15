@@ -11,7 +11,6 @@ import (
     "log"
     "net/http"
     "os/exec"
-    "strconv"
     "strings"
 //  "fmt"
 
@@ -25,15 +24,6 @@ import (
 var (
     // Global variables
     exporterPort = ":9100"
-    // Metrics definitions
-    // global zone metrics
-    gzZpoolList = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-        Name: "smartos_gz_zpool_list_total",
-        Help: "ZFS zpool list summary.",
-        },
-        []string{"zpool","type"},
-    )
-    // zone metrics
 )
 
 // Global Helpers
@@ -53,64 +43,6 @@ func isGlobalZone() (int) {
     }
 }
 
-// SmartOS command / tool callers
-
-func zpoolList() {
-    out, eerr := exec.Command("zpool", "list", "-p", "zones").Output()
-    if eerr != nil {
-        log.Fatal(eerr)
-    }
-    perr := parseZpoolStatusOutput(string(out))
-    if perr != nil {
-        log.Fatal(perr)
-    }
-}
-
-// Parsers
-
-func parseZpoolStatusOutput(out string) (error) {
-    outlines := strings.Split(out, "\n")
-    l := len(outlines)
-    for _, line := range outlines[1:l-1] {
-        parsedLine := strings.Fields(line)
-        sizeBytes, err := strconv.ParseFloat(parsedLine[1], 64)
-        if err != nil {
-            return err
-        }
-        allocBytes, err := strconv.ParseFloat(parsedLine[2], 64)
-        if err != nil {
-            return err
-        }
-        freeBytes, err := strconv.ParseFloat(parsedLine[3], 64)
-        if err != nil {
-            return err
-        }
-        fragPercent := strings.TrimSuffix(parsedLine[5], "%")
-        fragPercentTrim, err := strconv.ParseFloat(fragPercent, 64)
-        if err != nil {
-            return err
-        }
-        capPercent := strings.TrimSuffix(parsedLine[6], "%")
-        capPercentTrim, err := strconv.ParseFloat(capPercent, 64)
-        if err != nil {
-            return err
-        }
-        health := parsedLine[8]
-        if (strings.Contains(health, "ONLINE")) == true {
-          gzZpoolList.With(prometheus.Labels{"zpool":"zones", "type":"faulty"}).Set(0)
-        } else {
-          gzZpoolList.With(prometheus.Labels{"zpool":"zones", "type":"faulty"}).Set(1)
-        }
-
-        gzZpoolList.With(prometheus.Labels{"zpool":"zones", "type":"size"}).Set(sizeBytes)
-        gzZpoolList.With(prometheus.Labels{"zpool":"zones", "type":"alloc"}).Set(allocBytes)
-        gzZpoolList.With(prometheus.Labels{"zpool":"zones", "type":"free"}).Set(freeBytes)
-        gzZpoolList.With(prometheus.Labels{"zpool":"zones", "type":"frag"}).Set(fragPercentTrim)
-        gzZpoolList.With(prometheus.Labels{"zpool":"zones", "type":"capacity"}).Set(capPercentTrim)
-    }
-    return nil
-}
-
 // program starter
 
 func init() {
@@ -124,7 +56,6 @@ func init() {
 }
 
 func main() {
-    prometheus.MustRegister(gzZpoolList)
 
     freemem, _ := collector.NewGzFreeMemExporter()
     prometheus.MustRegister(freemem)
@@ -141,7 +72,8 @@ func main() {
     diskerrors, _ := collector.NewGzDiskErrorsExporter()
     prometheus.MustRegister(diskerrors)
 
-    zpoolList()
+    zpoollist, _ := collector.NewGzZpoolListExporter()
+    prometheus.MustRegister(zpoollist)
 
     // The Handler function provides a default handler to expose metrics
     // via an HTTP server. "/metrics" is the usual endpoint for that.
