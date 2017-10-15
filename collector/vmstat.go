@@ -61,8 +61,8 @@ func (e *gzFreeMemExporter) parseVmstatOutput(out string) (error) {
         if err != nil {
             return err
         }
-        e.gzFreeMem.With(prometheus.Labels{"type":"swap"}).Set(freeSwap)
-        e.gzFreeMem.With(prometheus.Labels{"type":"ram"}).Set(freeRam)
+        e.gzFreeMem.With(prometheus.Labels{"memory":"swap"}).Set(freeSwap)
+        e.gzFreeMem.With(prometheus.Labels{"memory":"ram"}).Set(freeRam)
     }
     return nil
 }
