@@ -24,7 +24,7 @@ func NewGZDiskErrorsExporter() (*gzDiskErrorsExporter, error) {
         gzDiskErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
             Name: "smartos_disk_errs_total",
             Help: "Number of hardware disk errors.",
-        }, []string{"device","error"}),
+        }, []string{"device","error_type"}),
     }, nil
 }
 
