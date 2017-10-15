@@ -11,7 +11,6 @@ import (
     "log"
     "net/http"
     "os/exec"
-    "strconv"
     "strings"
 //  "fmt"
 
@@ -25,39 +24,6 @@ import (
 var (
     // Global variables
     exporterPort = ":9100"
-    // Metrics definitions
-    // global zone metrics
-    gzCpuUsage = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-        Name: "smartos_gz_cpu_usage_total",
-        Help: "CPU usage exposed in percent.",
-        },
-        []string{"cpu","type"},
-    )
-    gzDiskErrors = prometheus.NewCounterVec(prometheus.CounterOpts{
-        Name: "smartos_gz_disk_errors_total",
-        Help: "Number of hardware disk errors.",
-        },
-        []string{"device","type"},
-    )
-    gzFreeMem = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-        Name: "smartos_gz_memory_free_bytes_total",
-        Help: "Total free memory (both RAM and Swap) of the CN.",
-        },
-        []string{"type"},
-    )
-    gzMlagUsage = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-        Name: "smartos_gz_network_mlag_bytes_total",
-        Help: "MLAG (aggr0) usage of the CN.",
-        },
-        []string{"device","type"},
-    )
-    gzZpoolList = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-        Name: "smartos_gz_zpool_list_total",
-        Help: "ZFS zpool list summary.",
-        },
-        []string{"zpool","type"},
-    )
-    // zone metrics
 )
 
 // Global Helpers
@@ -77,196 +43,6 @@ func isGlobalZone() (int) {
     }
 }
 
-// SmartOS command / tool callers
-func iostat() {
-    out, eerr := exec.Command("iostat", "-en").Output()
-    if eerr != nil {
-        log.Fatal(eerr)
-    }
-    perr := parseIostatOutput(string(out))
-    if perr != nil {
-        log.Fatal(perr)
-    }
-}
-
-func mpstat() {
-    out, eerr := exec.Command("mpstat", "1", "1").Output()
-    if eerr != nil {
-        log.Fatal(eerr)
-    }
-    perr := parseMpstatOutput(string(out))
-    if perr != nil {
-        log.Fatal(perr)
-    }
-}
-
-func nicstat() {
-    out, eerr := exec.Command("nicstat", "-i", "aggr0").Output()
-    if eerr != nil {
-        log.Fatal(eerr)
-    }
-    perr := parseNicstatOutput(string(out))
-    if perr != nil {
-        log.Fatal(perr)
-    }
-}
-
-func vmstat() {
-    out, eerr := exec.Command("vmstat", "1", "1").Output()
-    if eerr != nil {
-        log.Fatal(eerr)
-    }
-    perr := parseVmstatOutput(string(out))
-    if perr != nil {
-        log.Fatal(perr)
-    }
-}
-
-func zpoolList() {
-    out, eerr := exec.Command("zpool", "list", "-p", "zones").Output()
-    if eerr != nil {
-        log.Fatal(eerr)
-    }
-    perr := parseZpoolStatusOutput(string(out))
-    if perr != nil {
-        log.Fatal(perr)
-    }
-}
-
-// Parsers
-
-func parseIostatOutput(out string) (error) {
-    outlines := strings.Split(out, "\n")
-    l := len(outlines)
-    for _, line := range outlines[2:l-1] {
-        parsedLine := strings.Fields(line)
-        deviceName := parsedLine[4]
-        softErr, err := strconv.ParseFloat(parsedLine[0], 64)
-        if err != nil {
-            return err
-        }
-        hardErr, err := strconv.ParseFloat(parsedLine[1], 64)
-        if err != nil {
-            return err
-        }
-        trnErr, err := strconv.ParseFloat(parsedLine[2], 64)
-        if err != nil {
-            return err
-        }
-        gzDiskErrors.With(prometheus.Labels{"device":deviceName,"type":"soft"}).Add(softErr)
-        gzDiskErrors.With(prometheus.Labels{"device":deviceName,"type":"hard"}).Add(hardErr)
-        gzDiskErrors.With(prometheus.Labels{"device":deviceName,"type":"trn"}).Add(trnErr)
-    }
-    return nil
-}
-
-func parseMpstatOutput(out string) (error) {
-    outlines := strings.Split(out, "\n")
-    l := len(outlines)
-    for _, line := range outlines[1:l-1] {
-        parsedLine := strings.Fields(line)
-        cpuId := parsedLine[0]
-        cpuUsr, err := strconv.ParseFloat(parsedLine[12], 64)
-        if err != nil {
-            return err
-        }
-        cpuSys, err := strconv.ParseFloat(parsedLine[13], 64)
-        if err != nil {
-            return err
-        }
-        cpuIdl, err := strconv.ParseFloat(parsedLine[15], 64)
-        if err != nil {
-            return err
-        }
-        gzCpuUsage.With(prometheus.Labels{"cpu": cpuId, "type":"user"}).Set(cpuUsr)
-        gzCpuUsage.With(prometheus.Labels{"cpu": cpuId, "type":"system"}).Set(cpuSys)
-        gzCpuUsage.With(prometheus.Labels{"cpu": cpuId, "type":"idle"}).Set(cpuIdl)
-        //fmt.Printf("cpuId : %d, cpuUsr : %d, cpuSys : %d \n", cpuId, cpuUsr, cpuSys)
-    }
-    return nil
-}
-
-func parseNicstatOutput(out string) (error) {
-    outlines := strings.Split(out, "\n")
-    l := len(outlines)
-    for _, line := range outlines[1:l-1] {
-        parsedLine := strings.Fields(line)
-        readKb, err := strconv.ParseFloat(parsedLine[2], 64)
-        if err != nil {
-            return err
-        }
-        writeKb, err := strconv.ParseFloat(parsedLine[3], 64)
-        if err != nil {
-            return err
-        }
-        gzMlagUsage.With(prometheus.Labels{"device":"aggr0", "type":"read"}).Set(readKb)
-        gzMlagUsage.With(prometheus.Labels{"device":"aggr0", "type":"write"}).Set(writeKb)
-    }
-    return nil
-}
-
-func parseVmstatOutput(out string) (error) {
-    outlines := strings.Split(out, "\n")
-    l := len(outlines)
-    for _, line := range outlines[2:l-1] {
-        parsedLine := strings.Fields(line)
-        freeSwap, err := strconv.ParseFloat(parsedLine[3], 64)
-        if err != nil {
-            return err
-        }
-        freeRam, err := strconv.ParseFloat(parsedLine[4], 64)
-        if err != nil {
-            return err
-        }
-        gzFreeMem.With(prometheus.Labels{"type":"swap"}).Set(freeSwap)
-        gzFreeMem.With(prometheus.Labels{"type":"ram"}).Set(freeRam)
-    }
-    return nil
-}
-
-func parseZpoolStatusOutput(out string) (error) {
-    outlines := strings.Split(out, "\n")
-    l := len(outlines)
-    for _, line := range outlines[1:l-1] {
-        parsedLine := strings.Fields(line)
-        sizeBytes, err := strconv.ParseFloat(parsedLine[1], 64)
-        if err != nil {
-            return err
-        }
-        allocBytes, err := strconv.ParseFloat(parsedLine[2], 64)
-        if err != nil {
-            return err
-        }
-        freeBytes, err := strconv.ParseFloat(parsedLine[3], 64)
-        if err != nil {
-            return err
-        }
-        fragPercent := strings.TrimSuffix(parsedLine[5], "%")
-        fragPercentTrim, err := strconv.ParseFloat(fragPercent, 64)
-        if err != nil {
-            return err
-        }
-        capPercent := strings.TrimSuffix(parsedLine[6], "%")
-        capPercentTrim, err := strconv.ParseFloat(capPercent, 64)
-        if err != nil {
-            return err
-        }
-        health := parsedLine[8]
-        if (strings.Contains(health, "ONLINE")) == true {
-          gzZpoolList.With(prometheus.Labels{"zpool":"zones", "type":"faulty"}).Set(0)
-        } else {
-          gzZpoolList.With(prometheus.Labels{"zpool":"zones", "type":"faulty"}).Set(1)
-        }
-
-        gzZpoolList.With(prometheus.Labels{"zpool":"zones", "type":"size"}).Set(sizeBytes)
-        gzZpoolList.With(prometheus.Labels{"zpool":"zones", "type":"alloc"}).Set(allocBytes)
-        gzZpoolList.With(prometheus.Labels{"zpool":"zones", "type":"free"}).Set(freeBytes)
-        gzZpoolList.With(prometheus.Labels{"zpool":"zones", "type":"frag"}).Set(fragPercentTrim)
-        gzZpoolList.With(prometheus.Labels{"zpool":"zones", "type":"capacity"}).Set(capPercentTrim)
-    }
-    return nil
-}
-
 // program starter
 
 func init() {
@@ -280,20 +56,24 @@ func init() {
 }
 
 func main() {
-    prometheus.MustRegister(gzCpuUsage)
-    prometheus.MustRegister(gzDiskErrors)
-    prometheus.MustRegister(gzFreeMem)
-    prometheus.MustRegister(gzMlagUsage)
-    prometheus.MustRegister(gzZpoolList)
+
+    freemem, _ := collector.NewGzFreeMemExporter()
+    prometheus.MustRegister(freemem)
+
+    mlagusage, _ := collector.NewGzMlagUsageExporter()
+    prometheus.MustRegister(mlagusage)
 
     loadavg, _ := collector.NewLoadAverageExporter()
     prometheus.MustRegister(loadavg)
 
-    iostat()
-    mpstat()
-    nicstat()
-    vmstat()
-    zpoolList()
+    cpuusage, _ := collector.NewGzCpuUsageExporter()
+    prometheus.MustRegister(cpuusage)
+
+    diskerrors, _ := collector.NewGzDiskErrorsExporter()
+    prometheus.MustRegister(diskerrors)
+
+    zpoollist, _ := collector.NewGzZpoolListExporter()
+    prometheus.MustRegister(zpoollist)
 
     // The Handler function provides a default handler to expose metrics
     // via an HTTP server. "/metrics" is the usual endpoint for that.
