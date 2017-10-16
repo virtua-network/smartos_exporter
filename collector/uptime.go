@@ -64,7 +64,7 @@ func (e *LoadAverageExporter) uptime() {
 
 func (e *LoadAverageExporter) parseUptimeOutput(out string) (error) {
     // we will use regex in order to be sure to catch good numbers
-    r,_ := regexp.Compile(`load average: (\d.\d+), (\d.\d+), (\d.\d+)`)
+    r,_ := regexp.Compile(`load average: (\d+.\d+), (\d+.\d+), (\d+.\d+)`)
     loads := r.FindStringSubmatch(out)
 
     load1, err := strconv.ParseFloat(loads[1], 64)
