@@ -15,13 +15,17 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type gzMLAGUsageExporter struct {
+// GZMLAGUsageCollector declares the data type within the prometheus metrics
+// package.
+type GZMLAGUsageCollector struct {
 	gzMLAGUsageRead  *prometheus.GaugeVec
 	gzMLAGUsageWrite *prometheus.GaugeVec
 }
 
-func NewGZMLAGUsageExporter() (*gzMLAGUsageExporter, error) {
-	return &gzMLAGUsageExporter{
+// NewGZMLAGUsageExporter returns a newly allocated exporter GZMLAGUsageCollector.
+// It exposes the network bandwidth used by the MLAG interface
+func NewGZMLAGUsageExporter() (*GZMLAGUsageCollector, error) {
+	return &GZMLAGUsageCollector{
 		gzMLAGUsageRead: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "smartos_network_mlag_receive_kilobytes",
 			Help: "MLAG (aggr0) receive statistic in KBytes.",
@@ -33,18 +37,20 @@ func NewGZMLAGUsageExporter() (*gzMLAGUsageExporter, error) {
 	}, nil
 }
 
-func (e *gzMLAGUsageExporter) Describe(ch chan<- *prometheus.Desc) {
+// Describe describes all the metrics.
+func (e *GZMLAGUsageCollector) Describe(ch chan<- *prometheus.Desc) {
 	e.gzMLAGUsageRead.Describe(ch)
 	e.gzMLAGUsageWrite.Describe(ch)
 }
 
-func (e *gzMLAGUsageExporter) Collect(ch chan<- prometheus.Metric) {
+// Collect fetches the stats.
+func (e *GZMLAGUsageCollector) Collect(ch chan<- prometheus.Metric) {
 	e.nicstat()
 	e.gzMLAGUsageRead.Collect(ch)
 	e.gzMLAGUsageWrite.Collect(ch)
 }
 
-func (e *gzMLAGUsageExporter) nicstat() {
+func (e *GZMLAGUsageCollector) nicstat() {
 	// XXX needs enhancement :
 	// use of nicstat will wait 2 seconds in order to collect statistics
 	out, eerr := exec.Command("nicstat", "-i", "aggr0", "1", "2").Output()
@@ -57,7 +63,7 @@ func (e *gzMLAGUsageExporter) nicstat() {
 	}
 }
 
-func (e *gzMLAGUsageExporter) parseNicstatOutput(out string) error {
+func (e *GZMLAGUsageCollector) parseNicstatOutput(out string) error {
 	outlines := strings.Split(out, "\n")
 	l := len(outlines)
 	for _, line := range outlines[2 : l-1] {

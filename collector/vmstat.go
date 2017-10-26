@@ -15,12 +15,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type gzFreeMemExporter struct {
+// GZFreeMemCollector declares the data type within the prometheus metrics package.
+type GZFreeMemCollector struct {
 	gzFreeMem *prometheus.GaugeVec
 }
 
-func NewGZFreeMemExporter() (*gzFreeMemExporter, error) {
-	return &gzFreeMemExporter{
+// NewGZFreeMemExporter returns a newly allocated exporter GZFreeMemCollector.
+// It exposes the total free memory of the CN.
+func NewGZFreeMemExporter() (*GZFreeMemCollector, error) {
+	return &GZFreeMemCollector{
 		gzFreeMem: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "smartos_memory_free_bytes",
 			Help: "Total free memory (both RAM and Swap) of the CN.",
@@ -28,16 +31,18 @@ func NewGZFreeMemExporter() (*gzFreeMemExporter, error) {
 	}, nil
 }
 
-func (e *gzFreeMemExporter) Describe(ch chan<- *prometheus.Desc) {
+// Describe describes all the metrics.
+func (e *GZFreeMemCollector) Describe(ch chan<- *prometheus.Desc) {
 	e.gzFreeMem.Describe(ch)
 }
 
-func (e *gzFreeMemExporter) Collect(ch chan<- prometheus.Metric) {
+// Collect fetches the stats.
+func (e *GZFreeMemCollector) Collect(ch chan<- prometheus.Metric) {
 	e.vmstat()
 	e.gzFreeMem.Collect(ch)
 }
 
-func (e *gzFreeMemExporter) vmstat() {
+func (e *GZFreeMemCollector) vmstat() {
 	// XXX needs enhancement :
 	// use of vmstat will wait 2 seconds in order to collect statistics
 	out, eerr := exec.Command("vmstat", "1", "2").Output()
@@ -50,7 +55,7 @@ func (e *gzFreeMemExporter) vmstat() {
 	}
 }
 
-func (e *gzFreeMemExporter) parseVmstatOutput(out string) error {
+func (e *GZFreeMemCollector) parseVmstatOutput(out string) error {
 	outlines := strings.Split(out, "\n")
 	l := len(outlines)
 	for _, line := range outlines[3 : l-1] {
@@ -59,12 +64,12 @@ func (e *gzFreeMemExporter) parseVmstatOutput(out string) error {
 		if err != nil {
 			return err
 		}
-		freeRam, err := strconv.ParseFloat(parsedLine[4], 64)
+		freeRAM, err := strconv.ParseFloat(parsedLine[4], 64)
 		if err != nil {
 			return err
 		}
 		e.gzFreeMem.With(prometheus.Labels{"memory": "swap"}).Set(freeSwap)
-		e.gzFreeMem.With(prometheus.Labels{"memory": "ram"}).Set(freeRam)
+		e.gzFreeMem.With(prometheus.Labels{"memory": "ram"}).Set(freeRAM)
 	}
 	return nil
 }

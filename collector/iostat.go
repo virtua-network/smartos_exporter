@@ -15,12 +15,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type gzDiskErrorsExporter struct {
+// GZDiskErrorsCollector declares the data type within the prometheus metrics package.
+type GZDiskErrorsCollector struct {
 	gzDiskErrors *prometheus.CounterVec
 }
 
-func NewGZDiskErrorsExporter() (*gzDiskErrorsExporter, error) {
-	return &gzDiskErrorsExporter{
+// NewGZDiskErrorsExporter returns a newly allocated exporter GZDiskErrorsCollector.
+// It exposes the number of hardware disk errors
+func NewGZDiskErrorsExporter() (*GZDiskErrorsCollector, error) {
+	return &GZDiskErrorsCollector{
 		gzDiskErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "smartos_disk_errs_total",
 			Help: "Number of hardware disk errors.",
@@ -28,16 +31,18 @@ func NewGZDiskErrorsExporter() (*gzDiskErrorsExporter, error) {
 	}, nil
 }
 
-func (e *gzDiskErrorsExporter) Describe(ch chan<- *prometheus.Desc) {
+// Describe describes all the metrics.
+func (e *GZDiskErrorsCollector) Describe(ch chan<- *prometheus.Desc) {
 	e.gzDiskErrors.Describe(ch)
 }
 
-func (e *gzDiskErrorsExporter) Collect(ch chan<- prometheus.Metric) {
+// Collect fetches the stats.
+func (e *GZDiskErrorsCollector) Collect(ch chan<- prometheus.Metric) {
 	e.iostat()
 	e.gzDiskErrors.Collect(ch)
 }
 
-func (e *gzDiskErrorsExporter) iostat() {
+func (e *GZDiskErrorsCollector) iostat() {
 	out, eerr := exec.Command("iostat", "-en").Output()
 	if eerr != nil {
 		log.Fatal(eerr)
@@ -48,7 +53,7 @@ func (e *gzDiskErrorsExporter) iostat() {
 	}
 }
 
-func (e *gzDiskErrorsExporter) parseIostatOutput(out string) error {
+func (e *GZDiskErrorsCollector) parseIostatOutput(out string) error {
 	outlines := strings.Split(out, "\n")
 	l := len(outlines)
 	for _, line := range outlines[2 : l-1] {

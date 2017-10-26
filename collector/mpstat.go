@@ -16,12 +16,16 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type gzCPUUsageExporter struct {
+// GZCPUUsageCollector declare the data type within the prometheus metrics
+// package.
+type GZCPUUsageCollector struct {
 	gzCPUUsage *prometheus.GaugeVec
 }
 
-func NewGZCPUUsageExporter() (*gzCPUUsageExporter, error) {
-	return &gzCPUUsageExporter{
+// NewGZCPUUsageExporter returns a newly allocated exporter GZCPUUsageCollector.
+// It exposes the CPU usage in percent.
+func NewGZCPUUsageExporter() (*GZCPUUsageCollector, error) {
+	return &GZCPUUsageCollector{
 		gzCPUUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "smartos_cpu_usage_percents",
 			Help: "CPU usage exposed in percent.",
@@ -29,16 +33,18 @@ func NewGZCPUUsageExporter() (*gzCPUUsageExporter, error) {
 	}, nil
 }
 
-func (e *gzCPUUsageExporter) Describe(ch chan<- *prometheus.Desc) {
+// Describe describes all the metrics.
+func (e *GZCPUUsageCollector) Describe(ch chan<- *prometheus.Desc) {
 	e.gzCPUUsage.Describe(ch)
 }
 
-func (e *gzCPUUsageExporter) Collect(ch chan<- prometheus.Metric) {
+// Collect fetches the stats.
+func (e *GZCPUUsageCollector) Collect(ch chan<- prometheus.Metric) {
 	e.mpstat()
 	e.gzCPUUsage.Collect(ch)
 }
 
-func (e *gzCPUUsageExporter) mpstat() {
+func (e *GZCPUUsageCollector) mpstat() {
 	// XXX needs enhancement :
 	// use of mpstat will wait 2 seconds in order to collect statistics
 	out, eerr := exec.Command("mpstat", "1", "2").Output()
@@ -51,7 +57,7 @@ func (e *gzCPUUsageExporter) mpstat() {
 	}
 }
 
-func (e *gzCPUUsageExporter) parseMpstatOutput(out string) error {
+func (e *GZCPUUsageCollector) parseMpstatOutput(out string) error {
 	// this regexp will remove all lines containing header labels
 	r, _ := regexp.Compile(`(?m)[\r\n]+^.*CPU.*$`)
 	result := r.ReplaceAllString(out, "")
@@ -60,7 +66,7 @@ func (e *gzCPUUsageExporter) parseMpstatOutput(out string) error {
 	l := len(outlines)
 	for _, line := range outlines[1 : l-1] {
 		parsedLine := strings.Fields(line)
-		cpuId := parsedLine[0]
+		cpuID := parsedLine[0]
 		cpuUsr, err := strconv.ParseFloat(parsedLine[12], 64)
 		if err != nil {
 			return err
@@ -73,10 +79,10 @@ func (e *gzCPUUsageExporter) parseMpstatOutput(out string) error {
 		if err != nil {
 			return err
 		}
-		e.gzCPUUsage.With(prometheus.Labels{"cpu": cpuId, "mode": "user"}).Set(cpuUsr)
-		e.gzCPUUsage.With(prometheus.Labels{"cpu": cpuId, "mode": "system"}).Set(cpuSys)
-		e.gzCPUUsage.With(prometheus.Labels{"cpu": cpuId, "mode": "idle"}).Set(cpuIdl)
-		//fmt.Printf("cpuId : %d, cpuUsr : %d, cpuSys : %d \n", cpuId, cpuUsr, cpuSys)
+		e.gzCPUUsage.With(prometheus.Labels{"cpu": cpuID, "mode": "user"}).Set(cpuUsr)
+		e.gzCPUUsage.With(prometheus.Labels{"cpu": cpuID, "mode": "system"}).Set(cpuSys)
+		e.gzCPUUsage.With(prometheus.Labels{"cpu": cpuID, "mode": "idle"}).Set(cpuIdl)
+		//fmt.Printf("cpuID : %d, cpuUsr : %d, cpuSys : %d \n", cpuID, cpuUsr, cpuSys)
 	}
 	return nil
 }

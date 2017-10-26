@@ -15,7 +15,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type gzZpoolListExporter struct {
+// GZZpoolListCollector declares the data type within the prometheus metrics package.
+type GZZpoolListCollector struct {
 	gzZpoolListAlloc    *prometheus.GaugeVec
 	gzZpoolListCapacity *prometheus.GaugeVec
 	gzZpoolListFaulty   *prometheus.GaugeVec
@@ -24,8 +25,10 @@ type gzZpoolListExporter struct {
 	gzZpoolListSize     *prometheus.GaugeVec
 }
 
-func NewGZZpoolListExporter() (*gzZpoolListExporter, error) {
-	return &gzZpoolListExporter{
+// NewGZZpoolListExporter returns a newly allocated exporter GZZpoolListCollector.
+// It exposes the zpool list command result.
+func NewGZZpoolListExporter() (*GZZpoolListCollector, error) {
+	return &GZZpoolListCollector{
 		gzZpoolListAlloc: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "smartos_zpool_alloc_bytes",
 			Help: "ZFS zpool allocated size in bytes.",
@@ -53,7 +56,8 @@ func NewGZZpoolListExporter() (*gzZpoolListExporter, error) {
 	}, nil
 }
 
-func (e *gzZpoolListExporter) Describe(ch chan<- *prometheus.Desc) {
+// Describe describes all the metrics.
+func (e *GZZpoolListCollector) Describe(ch chan<- *prometheus.Desc) {
 	e.gzZpoolListAlloc.Describe(ch)
 	e.gzZpoolListCapacity.Describe(ch)
 	e.gzZpoolListFaulty.Describe(ch)
@@ -62,7 +66,8 @@ func (e *gzZpoolListExporter) Describe(ch chan<- *prometheus.Desc) {
 	e.gzZpoolListSize.Describe(ch)
 }
 
-func (e *gzZpoolListExporter) Collect(ch chan<- prometheus.Metric) {
+// Collect fetches the stats.
+func (e *GZZpoolListCollector) Collect(ch chan<- prometheus.Metric) {
 	e.zpoolList()
 	e.gzZpoolListAlloc.Collect(ch)
 	e.gzZpoolListCapacity.Collect(ch)
@@ -72,7 +77,7 @@ func (e *gzZpoolListExporter) Collect(ch chan<- prometheus.Metric) {
 	e.gzZpoolListSize.Collect(ch)
 }
 
-func (e *gzZpoolListExporter) zpoolList() {
+func (e *GZZpoolListCollector) zpoolList() {
 	out, eerr := exec.Command("zpool", "list", "-p", "zones").Output()
 	if eerr != nil {
 		log.Fatal(eerr)
@@ -83,7 +88,7 @@ func (e *gzZpoolListExporter) zpoolList() {
 	}
 }
 
-func (e *gzZpoolListExporter) parseZpoolListOutput(out string) error {
+func (e *GZZpoolListCollector) parseZpoolListOutput(out string) error {
 	outlines := strings.Split(out, "\n")
 	l := len(outlines)
 	for _, line := range outlines[1 : l-1] {

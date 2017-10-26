@@ -38,9 +38,8 @@ func isGlobalZone() int {
 	}
 	if (strings.Contains(string(out), "global")) == false {
 		return 0
-	} else {
-		return 1
 	}
+	return 1
 }
 
 // program starter

@@ -15,14 +15,18 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type LoadAverageExporter struct {
+// LoadAverageCollector declares the data type within the prometheus metrics
+// package.
+type LoadAverageCollector struct {
 	LoadAverage1  prometheus.Gauge
 	LoadAverage5  prometheus.Gauge
 	LoadAverage15 prometheus.Gauge
 }
 
-func NewLoadAverageExporter() (*LoadAverageExporter, error) {
-	return &LoadAverageExporter{
+// NewLoadAverageExporter returns a newly allocated exporter LoadAverageCollector.
+// It exposes the CPU load average.
+func NewLoadAverageExporter() (*LoadAverageCollector, error) {
+	return &LoadAverageCollector{
 		LoadAverage1: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "smartos_cpu_load1",
 			Help: "CPU load average 1 minute.",
@@ -38,20 +42,22 @@ func NewLoadAverageExporter() (*LoadAverageExporter, error) {
 	}, nil
 }
 
-func (e *LoadAverageExporter) Describe(ch chan<- *prometheus.Desc) {
+// Describe describes all the metrics.
+func (e *LoadAverageCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.LoadAverage1.Desc()
 	ch <- e.LoadAverage5.Desc()
 	ch <- e.LoadAverage15.Desc()
 }
 
-func (e *LoadAverageExporter) Collect(ch chan<- prometheus.Metric) {
+// Collect fetches the stats.
+func (e *LoadAverageCollector) Collect(ch chan<- prometheus.Metric) {
 	e.uptime()
 	ch <- e.LoadAverage1
 	ch <- e.LoadAverage5
 	ch <- e.LoadAverage15
 }
 
-func (e *LoadAverageExporter) uptime() {
+func (e *LoadAverageCollector) uptime() {
 	out, eerr := exec.Command("uptime").Output()
 	if eerr != nil {
 		log.Fatal(eerr)
@@ -62,7 +68,7 @@ func (e *LoadAverageExporter) uptime() {
 	}
 }
 
-func (e *LoadAverageExporter) parseUptimeOutput(out string) error {
+func (e *LoadAverageCollector) parseUptimeOutput(out string) error {
 	// we will use regex in order to be sure to catch good numbers
 	r, _ := regexp.Compile(`load average: (\d+.\d+), (\d+.\d+), (\d+.\d+)`)
 	loads := r.FindStringSubmatch(out)
