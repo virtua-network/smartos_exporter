@@ -7,64 +7,64 @@
 package collector
 
 import (
-    "log"
-    "os/exec"
-    "strconv"
-    "strings"
-    // Prometheus Go toolset
-    "github.com/prometheus/client_golang/prometheus"
+	"log"
+	"os/exec"
+	"strconv"
+	"strings"
+	// Prometheus Go toolset
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type gzFreeMemExporter struct {
-    gzFreeMem      *prometheus.GaugeVec
+	gzFreeMem *prometheus.GaugeVec
 }
 
 func NewGZFreeMemExporter() (*gzFreeMemExporter, error) {
-    return &gzFreeMemExporter{
-        gzFreeMem: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-            Name: "smartos_memory_free_bytes",
-            Help: "Total free memory (both RAM and Swap) of the CN.",
-        }, []string{"memory"}),
-    }, nil
+	return &gzFreeMemExporter{
+		gzFreeMem: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "smartos_memory_free_bytes",
+			Help: "Total free memory (both RAM and Swap) of the CN.",
+		}, []string{"memory"}),
+	}, nil
 }
 
 func (e *gzFreeMemExporter) Describe(ch chan<- *prometheus.Desc) {
-    e.gzFreeMem.Describe(ch)
+	e.gzFreeMem.Describe(ch)
 }
 
 func (e *gzFreeMemExporter) Collect(ch chan<- prometheus.Metric) {
-    e.vmstat()
-    e.gzFreeMem.Collect(ch)
+	e.vmstat()
+	e.gzFreeMem.Collect(ch)
 }
 
 func (e *gzFreeMemExporter) vmstat() {
-    // XXX needs enhancement :
-    // use of vmstat will wait 2 seconds in order to collect statistics
-    out, eerr := exec.Command("vmstat", "1", "2").Output()
-    if eerr != nil {
-        log.Fatal(eerr)
-    }
-    perr := e.parseVmstatOutput(string(out))
-    if perr != nil {
-        log.Fatal(perr)
-    }
+	// XXX needs enhancement :
+	// use of vmstat will wait 2 seconds in order to collect statistics
+	out, eerr := exec.Command("vmstat", "1", "2").Output()
+	if eerr != nil {
+		log.Fatal(eerr)
+	}
+	perr := e.parseVmstatOutput(string(out))
+	if perr != nil {
+		log.Fatal(perr)
+	}
 }
 
-func (e *gzFreeMemExporter) parseVmstatOutput(out string) (error) {
-    outlines := strings.Split(out, "\n")
-    l := len(outlines)
-    for _, line := range outlines[3:l-1] {
-        parsedLine := strings.Fields(line)
-        freeSwap, err := strconv.ParseFloat(parsedLine[3], 64)
-        if err != nil {
-            return err
-        }
-        freeRam, err := strconv.ParseFloat(parsedLine[4], 64)
-        if err != nil {
-            return err
-        }
-        e.gzFreeMem.With(prometheus.Labels{"memory":"swap"}).Set(freeSwap)
-        e.gzFreeMem.With(prometheus.Labels{"memory":"ram"}).Set(freeRam)
-    }
-    return nil
+func (e *gzFreeMemExporter) parseVmstatOutput(out string) error {
+	outlines := strings.Split(out, "\n")
+	l := len(outlines)
+	for _, line := range outlines[3 : l-1] {
+		parsedLine := strings.Fields(line)
+		freeSwap, err := strconv.ParseFloat(parsedLine[3], 64)
+		if err != nil {
+			return err
+		}
+		freeRam, err := strconv.ParseFloat(parsedLine[4], 64)
+		if err != nil {
+			return err
+		}
+		e.gzFreeMem.With(prometheus.Labels{"memory": "swap"}).Set(freeSwap)
+		e.gzFreeMem.With(prometheus.Labels{"memory": "ram"}).Set(freeRam)
+	}
+	return nil
 }
