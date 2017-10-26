@@ -8,22 +8,22 @@
 package main
 
 import (
-    "log"
-    "net/http"
-    "os/exec"
-    "strings"
-//  "fmt"
+	"log"
+	"net/http"
+	"os/exec"
+	"strings"
+	//  "fmt"
 
-    "github.com/virtua-network/smartos_exporter/collector"
+	"github.com/virtua-network/smartos_exporter/collector"
 
-    // Prometheus Go toolset
-    "github.com/prometheus/client_golang/prometheus"
-    "github.com/prometheus/client_golang/prometheus/promhttp"
+	// Prometheus Go toolset
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
-    // Global variables
-    exporterPort = ":9100"
+	// Global variables
+	exporterPort = ":9100"
 )
 
 // Global Helpers
@@ -31,52 +31,51 @@ var (
 // try to determine if its executed inside the GZ or not.
 // return 1 if in GZ
 //        0 if in zone
-func isGlobalZone() (int) {
-    out, eerr := exec.Command("zonename").Output()
-    if eerr != nil {
-        log.Fatal(eerr)
-    }
-    if (strings.Contains(string(out), "global")) == false {
-        return 0
-    } else {
-        return 1
-    }
+func isGlobalZone() int {
+	out, eerr := exec.Command("zonename").Output()
+	if eerr != nil {
+		log.Fatal(eerr)
+	}
+	if (strings.Contains(string(out), "global")) == false {
+		return 0
+	}
+	return 1
 }
 
 // program starter
 
 func init() {
-    // Metrics have to be registered to be exposed:
-    gz := isGlobalZone()
-    if gz == 0 {
-        // not yet implemented
-        // XXX
-        log.Fatal("zone statistics gathering is not yet implemented.")
-    }
+	// Metrics have to be registered to be exposed:
+	gz := isGlobalZone()
+	if gz == 0 {
+		// not yet implemented
+		// XXX
+		log.Fatal("zone statistics gathering is not yet implemented.")
+	}
 }
 
 func main() {
 
-    gzFreeMem, _ := collector.NewGZFreeMemExporter()
-    prometheus.MustRegister(gzFreeMem)
+	gzFreeMem, _ := collector.NewGZFreeMemExporter()
+	prometheus.MustRegister(gzFreeMem)
 
-    gzMLAGUsage, _ := collector.NewGZMLAGUsageExporter()
-    prometheus.MustRegister(gzMLAGUsage)
+	gzMLAGUsage, _ := collector.NewGZMLAGUsageExporter()
+	prometheus.MustRegister(gzMLAGUsage)
 
-    loadAvg, _ := collector.NewLoadAverageExporter()
-    prometheus.MustRegister(loadAvg)
+	loadAvg, _ := collector.NewLoadAverageExporter()
+	prometheus.MustRegister(loadAvg)
 
-    cpuUsage, _ := collector.NewGZCPUUsageExporter()
-    prometheus.MustRegister(cpuUsage)
+	cpuUsage, _ := collector.NewGZCPUUsageExporter()
+	prometheus.MustRegister(cpuUsage)
 
-    gzDiskErrors, _ := collector.NewGZDiskErrorsExporter()
-    prometheus.MustRegister(gzDiskErrors)
+	gzDiskErrors, _ := collector.NewGZDiskErrorsExporter()
+	prometheus.MustRegister(gzDiskErrors)
 
-    gzZpoolList, _ := collector.NewGZZpoolListExporter()
-    prometheus.MustRegister(gzZpoolList)
+	gzZpoolList, _ := collector.NewGZZpoolListExporter()
+	prometheus.MustRegister(gzZpoolList)
 
-    // The Handler function provides a default handler to expose metrics
-    // via an HTTP server. "/metrics" is the usual endpoint for that.
-    http.Handle("/metrics", promhttp.Handler())
-    log.Fatal(http.ListenAndServe(exporterPort, nil))
+	// The Handler function provides a default handler to expose metrics
+	// via an HTTP server. "/metrics" is the usual endpoint for that.
+	http.Handle("/metrics", promhttp.Handler())
+	log.Fatal(http.ListenAndServe(exporterPort, nil))
 }
