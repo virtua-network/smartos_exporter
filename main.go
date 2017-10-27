@@ -43,36 +43,33 @@ func isGlobalZone() int {
 }
 
 // program starter
-
-func init() {
-	// Metrics have to be registered to be exposed:
-	gz := isGlobalZone()
-	if gz == 0 {
-		// not yet implemented
-		// XXX
-		log.Fatal("zone statistics gathering is not yet implemented.")
-	}
-}
-
 func main() {
+	// check if it is a GZ or a zone
+	gz := isGlobalZone()
+	if gz == 1 {
+		// Global Zone metrics
+		gzFreeMem, _ := collector.NewGZFreeMemExporter()
+		prometheus.MustRegister(gzFreeMem)
 
-	gzFreeMem, _ := collector.NewGZFreeMemExporter()
-	prometheus.MustRegister(gzFreeMem)
+		gzMLAGUsage, _ := collector.NewGZMLAGUsageExporter()
+		prometheus.MustRegister(gzMLAGUsage)
 
-	gzMLAGUsage, _ := collector.NewGZMLAGUsageExporter()
-	prometheus.MustRegister(gzMLAGUsage)
+		loadAvg, _ := collector.NewLoadAverageExporter()
+		prometheus.MustRegister(loadAvg)
 
-	loadAvg, _ := collector.NewLoadAverageExporter()
-	prometheus.MustRegister(loadAvg)
+		cpuUsage, _ := collector.NewGZCPUUsageExporter()
+		prometheus.MustRegister(cpuUsage)
 
-	cpuUsage, _ := collector.NewGZCPUUsageExporter()
-	prometheus.MustRegister(cpuUsage)
+		gzDiskErrors, _ := collector.NewGZDiskErrorsExporter()
+		prometheus.MustRegister(gzDiskErrors)
 
-	gzDiskErrors, _ := collector.NewGZDiskErrorsExporter()
-	prometheus.MustRegister(gzDiskErrors)
-
-	gzZpoolList, _ := collector.NewGZZpoolListExporter()
-	prometheus.MustRegister(gzZpoolList)
+		gzZpoolList, _ := collector.NewGZZpoolListExporter()
+		prometheus.MustRegister(gzZpoolList)
+	} else {
+		// Zone metrics
+		loadAvg, _ := collector.NewLoadAverageExporter()
+		prometheus.MustRegister(loadAvg)
+	}
 
 	// The Handler function provides a default handler to expose metrics
 	// via an HTTP server. "/metrics" is the usual endpoint for that.
