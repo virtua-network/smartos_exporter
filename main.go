@@ -58,6 +58,7 @@ func main() {
 		// Zone metrics
 		zoneDf, _ := collector.NewZoneDfExporter()
 		prometheus.MustRegister(zoneDf)
+
 		zoneKstat, _ := collector.NewZoneKstatExporter()
 		prometheus.MustRegister(zoneKstat)
 	}
@@ -69,9 +70,6 @@ func main() {
 
 		gzMLAGUsage, _ := collector.NewGZMLAGUsageExporter()
 		prometheus.MustRegister(gzMLAGUsage)
-
-		loadAvg, _ := collector.NewLoadAverageExporter()
-		prometheus.MustRegister(loadAvg)
 
 		cpuUsage, _ := collector.NewGZCPUUsageExporter()
 		prometheus.MustRegister(cpuUsage)
