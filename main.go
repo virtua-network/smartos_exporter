@@ -42,10 +42,24 @@ func isGlobalZone() int {
 	return 1
 }
 
+// XXX add a OS check in func init
+// func init()
+
 // program starter
 func main() {
 	// check if it is a GZ or a zone
 	gz := isGlobalZone()
+
+	// common metrics
+	loadAvg, _ := collector.NewLoadAverageExporter()
+	prometheus.MustRegister(loadAvg)
+
+	if gz == 0 {
+		// Zone metrics
+		zoneDf, _ := collector.NewZoneDfExporter()
+		prometheus.MustRegister(zoneDf)
+	}
+
 	if gz == 1 {
 		// Global Zone metrics
 		gzFreeMem, _ := collector.NewGZFreeMemExporter()
@@ -65,10 +79,6 @@ func main() {
 
 		gzZpoolList, _ := collector.NewGZZpoolListExporter()
 		prometheus.MustRegister(gzZpoolList)
-	} else {
-		// Zone metrics
-		loadAvg, _ := collector.NewLoadAverageExporter()
-		prometheus.MustRegister(loadAvg)
 	}
 
 	// The Handler function provides a default handler to expose metrics
