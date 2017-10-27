@@ -58,6 +58,8 @@ func main() {
 		// Zone metrics
 		zoneDf, _ := collector.NewZoneDfExporter()
 		prometheus.MustRegister(zoneDf)
+		zoneKstat, _ := collector.NewZoneKstatExporter()
+		prometheus.MustRegister(zoneKstat)
 	}
 
 	if gz == 1 {
