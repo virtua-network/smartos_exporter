@@ -10,7 +10,9 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	//  "fmt"
 
@@ -25,6 +27,13 @@ var (
 	// Global variables
 	exporterPort = ":9100"
 )
+
+func init() {
+	// change PATH env variable inside a LX zone
+	if runtime.GOOS == "linux" {
+		os.Setenv("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/native/usr/bin")
+	}
+}
 
 // Global Helpers
 
@@ -41,9 +50,6 @@ func isGlobalZone() int {
 	}
 	return 1
 }
-
-// XXX add a OS check in func init
-// func init()
 
 // program starter
 func main() {
