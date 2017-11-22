@@ -18,19 +18,35 @@ import (
 
 // ZoneKstatCollector declares the data type within the prometheus metrics package.
 type ZoneKstatCollector struct {
-	ZoneKstatCPUBaseline *prometheus.GaugeVec
-	ZoneKstatCPUCap      *prometheus.GaugeVec
-	ZoneKstatCPUMaxUsage *prometheus.GaugeVec
-	ZoneKstatCPUUsage    *prometheus.GaugeVec
-	ZoneKstatMemCap      *prometheus.GaugeVec
-	ZoneKstatMemFree     *prometheus.GaugeVec
-	ZoneKstatMemNover    *prometheus.GaugeVec
-	ZoneKstatMemPagedOut *prometheus.GaugeVec
-	ZoneKstatMemRSS      *prometheus.GaugeVec
-	ZoneKstatSwapCap     *prometheus.GaugeVec
-	ZoneKstatSwapFree    *prometheus.GaugeVec
-	ZoneKstatSwapUsed    *prometheus.GaugeVec
+	ZoneKstatCPUBaseline   *prometheus.GaugeVec
+	ZoneKstatCPUCap        *prometheus.GaugeVec
+	ZoneKstatCPUMaxUsage   *prometheus.GaugeVec
+	ZoneKstatCPUUsage      *prometheus.GaugeVec
+	ZoneKstatMemCap        *prometheus.GaugeVec
+	ZoneKstatMemFree       *prometheus.GaugeVec
+	ZoneKstatMemNover      *prometheus.GaugeVec
+	ZoneKstatMemPagedOut   *prometheus.GaugeVec
+	ZoneKstatMemRSS        *prometheus.GaugeVec
+	ZoneKstatNICCollisions *prometheus.GaugeVec
+	ZoneKstatNICIErrors    *prometheus.CounterVec
+	ZoneKstatNICIPackets   *prometheus.CounterVec
+	ZoneKstatNICLinkState  *prometheus.GaugeVec
+	ZoneKstatNICOBytes     *prometheus.CounterVec
+	ZoneKstatNICOErrors    *prometheus.CounterVec
+	ZoneKstatNICOPackets   *prometheus.CounterVec
+	ZoneKstatNICRBytes     *prometheus.CounterVec
+	ZoneKstatSwapCap       *prometheus.GaugeVec
+	ZoneKstatSwapFree      *prometheus.GaugeVec
+	ZoneKstatSwapUsed      *prometheus.GaugeVec
 }
+
+// ZoneKstatNIC defines the mapping of kstat link structure.
+type ZoneKstatNIC struct {
+	ifName, ifLabel string
+}
+
+// ZoneKstatNICs slice for key iteration
+type ZoneKstatNICs []ZoneKstatNIC
 
 // NewZoneKstatExporter returns a newly allocated exporter ZoneKstatCollector.
 // It exposes the kstat command result.
@@ -72,6 +88,38 @@ func NewZoneKstatExporter() (*ZoneKstatCollector, error) {
 			Name: "smartos_memory_rss_bytes",
 			Help: "Entire amount of allocated memory.",
 		}, []string{"zonename"}),
+		ZoneKstatNICCollisions: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "smartos_network_collisions",
+			Help: "Entire amount of collisions.",
+		}, []string{"zonename", "device"}),
+		ZoneKstatNICIErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "smartos_network_receive_errs_total",
+			Help: "Received errors.",
+		}, []string{"zonename", "device"}),
+		ZoneKstatNICIPackets: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "smartos_network_receive_packets_total",
+			Help: "Frames received successfully.",
+		}, []string{"zonename", "device"}),
+		ZoneKstatNICLinkState: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "smartos_network_link_state",
+			Help: "Link state; 0 for down, 1 for up.",
+		}, []string{"zonename", "device"}),
+		ZoneKstatNICOBytes: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "smartos_network_transmit_bytes_total",
+			Help: "Bytes (octets) transmitted successfully.",
+		}, []string{"zonename", "device"}),
+		ZoneKstatNICOErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "smartos_network_transmit_errs_total",
+			Help: "Transmit errors.",
+		}, []string{"zonename", "device"}),
+		ZoneKstatNICOPackets: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "smartos_network_transmit_packets_total",
+			Help: "Frames successfully transmitted.",
+		}, []string{"zonename", "device"}),
+		ZoneKstatNICRBytes: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "smartos_network_receive_bytes_total",
+			Help: "Bytes (octets) received successfully.",
+		}, []string{"zonename", "device"}),
 		ZoneKstatSwapCap: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "smartos_memory_swap_cap_bytes",
 			Help: "The SWAP limit in bytes.",
@@ -98,6 +146,14 @@ func (e *ZoneKstatCollector) Describe(ch chan<- *prometheus.Desc) {
 	e.ZoneKstatMemNover.Describe(ch)
 	e.ZoneKstatMemPagedOut.Describe(ch)
 	e.ZoneKstatMemRSS.Describe(ch)
+	e.ZoneKstatNICCollisions.Describe(ch)
+	e.ZoneKstatNICIErrors.Describe(ch)
+	e.ZoneKstatNICIPackets.Describe(ch)
+	e.ZoneKstatNICLinkState.Describe(ch)
+	e.ZoneKstatNICOBytes.Describe(ch)
+	e.ZoneKstatNICOErrors.Describe(ch)
+	e.ZoneKstatNICOPackets.Describe(ch)
+	e.ZoneKstatNICRBytes.Describe(ch)
 	e.ZoneKstatSwapCap.Describe(ch)
 	e.ZoneKstatSwapFree.Describe(ch)
 	e.ZoneKstatSwapUsed.Describe(ch)
@@ -107,6 +163,7 @@ func (e *ZoneKstatCollector) Describe(ch chan<- *prometheus.Desc) {
 func (e *ZoneKstatCollector) Collect(ch chan<- prometheus.Metric) {
 	e.kstatCPUList()
 	e.kstatMemList()
+	e.kstatNICList()
 	e.ZoneKstatCPUBaseline.Collect(ch)
 	e.ZoneKstatCPUCap.Collect(ch)
 	e.ZoneKstatCPUMaxUsage.Collect(ch)
@@ -116,6 +173,14 @@ func (e *ZoneKstatCollector) Collect(ch chan<- prometheus.Metric) {
 	e.ZoneKstatMemNover.Collect(ch)
 	e.ZoneKstatMemPagedOut.Collect(ch)
 	e.ZoneKstatMemRSS.Collect(ch)
+	e.ZoneKstatNICCollisions.Collect(ch)
+	e.ZoneKstatNICIErrors.Collect(ch)
+	e.ZoneKstatNICIPackets.Collect(ch)
+	e.ZoneKstatNICLinkState.Collect(ch)
+	e.ZoneKstatNICOBytes.Collect(ch)
+	e.ZoneKstatNICOErrors.Collect(ch)
+	e.ZoneKstatNICOPackets.Collect(ch)
+	e.ZoneKstatNICRBytes.Collect(ch)
 	e.ZoneKstatSwapCap.Collect(ch)
 	e.ZoneKstatSwapFree.Collect(ch)
 	e.ZoneKstatSwapUsed.Collect(ch)
@@ -138,6 +203,17 @@ func (e *ZoneKstatCollector) kstatMemList() {
 		log.Fatal(eerr)
 	}
 	perr := e.parseKstatMemListOutput(string(out))
+	if perr != nil {
+		log.Fatal(perr)
+	}
+}
+
+func (e *ZoneKstatCollector) kstatNICList() {
+	out, eerr := exec.Command("kstat", "-p", "-m", "link").Output()
+	if eerr != nil {
+		log.Fatal(eerr)
+	}
+	perr := e.parseKstatNICListOutput(string(out))
 	if perr != nil {
 		log.Fatal(perr)
 	}
@@ -235,6 +311,106 @@ func (e *ZoneKstatCollector) parseKstatMemListOutput(out string) error {
 	e.ZoneKstatSwapCap.With(prometheus.Labels{"zonename": m["zonename"]}).Set(swapCap)
 	e.ZoneKstatSwapFree.With(prometheus.Labels{"zonename": m["zonename"]}).Set(swapFree)
 	e.ZoneKstatSwapUsed.With(prometheus.Labels{"zonename": m["zonename"]}).Set(swapUsed)
+
+	return nil
+}
+
+func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
+	// trim the label in order to obtain the type of metric and interface name
+	r, _ := regexp.Compile(`(?m)^.+:(.+):`)
+
+	outlines := strings.Split(out, "\n")
+	l := len(outlines)
+	m := make(map[ZoneKstatNIC]string)
+	for _, line := range outlines[1 : l-1] {
+		parsedLine := strings.Fields(line)
+		fullLabel := parsedLine[0]
+		ifname := r.FindStringSubmatch(fullLabel)[1]
+		label := r.ReplaceAllString(fullLabel, "")
+		// map struct label and values
+		m[ZoneKstatNIC{ifname, label}] = parsedLine[1]
+	}
+
+	// populates the slice with the map
+	var ZoneKstatNICkeys ZoneKstatNICs
+	for k := range m {
+		ZoneKstatNICkeys = append(ZoneKstatNICkeys, k)
+	}
+
+	for _, k := range ZoneKstatNICkeys {
+		if k.ifLabel == "collisions" {
+			collisions, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "collisions"}], 64)
+			if err != nil {
+				return err
+			}
+			e.ZoneKstatNICCollisions.With(
+				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
+			).Set(collisions)
+		}
+		if k.ifLabel == "ierrors" {
+			ierrors, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "ierrors"}], 64)
+			if err != nil {
+				return err
+			}
+			e.ZoneKstatNICIErrors.With(
+				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
+			).Add(ierrors)
+		}
+		if k.ifLabel == "ipackets64" {
+			ipackets64, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "ipackets64"}], 64)
+			if err != nil {
+				return err
+			}
+			e.ZoneKstatNICIPackets.With(
+				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
+			).Add(ipackets64)
+		}
+		if k.ifLabel == "link_state" {
+			linkState, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "link_state"}], 64)
+			if err != nil {
+				return err
+			}
+			e.ZoneKstatNICLinkState.With(
+				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
+			).Set(linkState)
+		}
+		if k.ifLabel == "obytes64" {
+			obytes64, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "obytes64"}], 64)
+			if err != nil {
+				return err
+			}
+			e.ZoneKstatNICOBytes.With(
+				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
+			).Add(obytes64)
+		}
+		if k.ifLabel == "oerrors" {
+			oerrors, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "oerrors"}], 64)
+			if err != nil {
+				return err
+			}
+			e.ZoneKstatNICOErrors.With(
+				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
+			).Add(oerrors)
+		}
+		if k.ifLabel == "opackets64" {
+			opackets64, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "opackets64"}], 64)
+			if err != nil {
+				return err
+			}
+			e.ZoneKstatNICOPackets.With(
+				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
+			).Add(opackets64)
+		}
+		if k.ifLabel == "rbytes64" {
+			rbytes64, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "rbytes64"}], 64)
+			if err != nil {
+				return err
+			}
+			e.ZoneKstatNICRBytes.With(
+				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
+			).Add(rbytes64)
+		}
+	}
 
 	return nil
 }
