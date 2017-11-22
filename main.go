@@ -8,7 +8,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -21,11 +20,14 @@ import (
 	// Prometheus Go toolset
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/common/log"
+	"github.com/prometheus/common/version"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
 	// Global variables
-	exporterPort = ":9100"
+	listenAddress = kingpin.Flag("web.listen-address", "Address on which to expose metrics and web interface.").Default(":9100").String()
 )
 
 func init() {
@@ -53,6 +55,12 @@ func isGlobalZone() int {
 
 // program starter
 func main() {
+	log.AddFlags(kingpin.CommandLine)
+	kingpin.Version(version.Print("smartos_exporter"))
+	kingpin.HelpFlag.Short('h')
+	kingpin.Parse()
+
+	log.Infoln("Starting smartos_exporter", version.Info())
 	// check if it is a GZ or a zone
 	gz := isGlobalZone()
 
@@ -90,5 +98,9 @@ func main() {
 	// The Handler function provides a default handler to expose metrics
 	// via an HTTP server. "/metrics" is the usual endpoint for that.
 	http.Handle("/metrics", promhttp.Handler())
-	log.Fatal(http.ListenAndServe(exporterPort, nil))
+	log.Infoln("Listening on", *listenAddress)
+	err := http.ListenAndServe(*listenAddress, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
