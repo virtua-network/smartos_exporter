@@ -7,7 +7,7 @@
 package collector
 
 import (
-	"log"
+	"fmt"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -60,11 +60,11 @@ func (e *LoadAverageCollector) Collect(ch chan<- prometheus.Metric) {
 func (e *LoadAverageCollector) uptime() {
 	out, eerr := exec.Command("uptime").Output()
 	if eerr != nil {
-		log.Fatal(eerr)
+		fmt.Errorf("error on executing uptime: %v", eerr)
 	}
 	perr := e.parseUptimeOutput(string(out))
 	if perr != nil {
-		log.Fatal(perr)
+		fmt.Errorf("error on parsing uptime: %v", perr)
 	}
 }
 

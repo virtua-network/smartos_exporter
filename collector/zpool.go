@@ -7,7 +7,7 @@
 package collector
 
 import (
-	"log"
+	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -80,11 +80,11 @@ func (e *GZZpoolListCollector) Collect(ch chan<- prometheus.Metric) {
 func (e *GZZpoolListCollector) zpoolList() {
 	out, eerr := exec.Command("zpool", "list", "-p", "zones").Output()
 	if eerr != nil {
-		log.Fatal(eerr)
+		fmt.Errorf("error on executing zpool: %v", eerr)
 	}
 	perr := e.parseZpoolListOutput(string(out))
 	if perr != nil {
-		log.Fatal(perr)
+		fmt.Errorf("error on parsing zpool: %v", perr)
 	}
 }
 

@@ -7,7 +7,7 @@
 package collector
 
 import (
-	"log"
+	"fmt"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -189,33 +189,33 @@ func (e *ZoneKstatCollector) Collect(ch chan<- prometheus.Metric) {
 func (e *ZoneKstatCollector) kstatCPUList() {
 	out, eerr := exec.Command("kstat", "-p", "-c", "zone_caps", "-n", "cpucaps_zone*").Output()
 	if eerr != nil {
-		log.Fatal(eerr)
+		fmt.Errorf("error on executing kstat: %v", eerr)
 	}
 	perr := e.parseKstatCPUListOutput(string(out))
 	if perr != nil {
-		log.Fatal(perr)
+		fmt.Errorf("error on parsing kstat CPU list: %v", perr)
 	}
 }
 
 func (e *ZoneKstatCollector) kstatMemList() {
 	out, eerr := exec.Command("kstat", "-p", "-c", "zone_memory_cap").Output()
 	if eerr != nil {
-		log.Fatal(eerr)
+		fmt.Errorf("error on executing kstat: %v", eerr)
 	}
 	perr := e.parseKstatMemListOutput(string(out))
 	if perr != nil {
-		log.Fatal(perr)
+		fmt.Errorf("error on parsing kstat Mem list: %v", perr)
 	}
 }
 
 func (e *ZoneKstatCollector) kstatNICList() {
 	out, eerr := exec.Command("kstat", "-p", "-m", "link").Output()
 	if eerr != nil {
-		log.Fatal(eerr)
+		fmt.Errorf("error on executing kstat: %v", eerr)
 	}
 	perr := e.parseKstatNICListOutput(string(out))
 	if perr != nil {
-		log.Fatal(perr)
+		fmt.Errorf("error on parsing kstat NIC list: %v", perr)
 	}
 }
 
