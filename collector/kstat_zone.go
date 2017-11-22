@@ -28,6 +28,7 @@ type ZoneKstatCollector struct {
 	ZoneKstatMemPagedOut   *prometheus.GaugeVec
 	ZoneKstatMemRSS        *prometheus.GaugeVec
 	ZoneKstatNICCollisions *prometheus.GaugeVec
+	ZoneKstatNICIErrors    *prometheus.CounterVec
 	ZoneKstatSwapCap       *prometheus.GaugeVec
 	ZoneKstatSwapFree      *prometheus.GaugeVec
 	ZoneKstatSwapUsed      *prometheus.GaugeVec
@@ -85,6 +86,10 @@ func NewZoneKstatExporter() (*ZoneKstatCollector, error) {
 			Name: "smartos_network_collisions",
 			Help: "Entire amount of collisions.",
 		}, []string{"zonename", "device"}),
+		ZoneKstatNICIErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "smartos_network_receive_errs_total",
+			Help: "Receive errors.",
+		}, []string{"zonename", "device"}),
 		ZoneKstatSwapCap: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "smartos_memory_swap_cap_bytes",
 			Help: "The SWAP limit in bytes.",
@@ -112,6 +117,7 @@ func (e *ZoneKstatCollector) Describe(ch chan<- *prometheus.Desc) {
 	e.ZoneKstatMemPagedOut.Describe(ch)
 	e.ZoneKstatMemRSS.Describe(ch)
 	e.ZoneKstatNICCollisions.Describe(ch)
+	e.ZoneKstatNICIErrors.Describe(ch)
 	e.ZoneKstatSwapCap.Describe(ch)
 	e.ZoneKstatSwapFree.Describe(ch)
 	e.ZoneKstatSwapUsed.Describe(ch)
@@ -132,6 +138,7 @@ func (e *ZoneKstatCollector) Collect(ch chan<- prometheus.Metric) {
 	e.ZoneKstatMemPagedOut.Collect(ch)
 	e.ZoneKstatMemRSS.Collect(ch)
 	e.ZoneKstatNICCollisions.Collect(ch)
+	e.ZoneKstatNICIErrors.Collect(ch)
 	e.ZoneKstatSwapCap.Collect(ch)
 	e.ZoneKstatSwapFree.Collect(ch)
 	e.ZoneKstatSwapUsed.Collect(ch)
@@ -298,7 +305,17 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
 			).Set(collisions)
 		}
+		if k.ifLabel == "ierrors" {
+			ierrors, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "ierrors"}], 64)
+			if err != nil {
+				return err
+			}
+			e.ZoneKstatNICIErrors.With(
+				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
+			).Add(ierrors)
+		}
 	}
+
 	// RESERVED
 	//ierrors, err := strconv.ParseFloat(m["ierrors"], 64)
 	//if err != nil {
