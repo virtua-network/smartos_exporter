@@ -78,7 +78,7 @@ func (e *ZoneDfCollector) parseDfListOutput(out string) error {
 	outlines := strings.Split(out, "\n")
 	l := len(outlines)
 	// skip the first line (labels)
-	for _, line := range outlines[2 : l-1] {
+	for _, line := range outlines[1 : l-1] {
 		parsedLine := strings.Fields(line)
 		deviceName := parsedLine[0]
 		mountName := parsedLine[5]
