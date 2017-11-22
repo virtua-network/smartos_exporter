@@ -7,13 +7,13 @@
 package collector
 
 import (
-	"fmt"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
 	// Prometheus Go toolset
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/log"
 )
 
 // ZoneKstatCollector declares the data type within the prometheus metrics package.
@@ -189,33 +189,33 @@ func (e *ZoneKstatCollector) Collect(ch chan<- prometheus.Metric) {
 func (e *ZoneKstatCollector) kstatCPUList() {
 	out, eerr := exec.Command("kstat", "-p", "-c", "zone_caps", "-n", "cpucaps_zone*").Output()
 	if eerr != nil {
-		fmt.Errorf("error on executing kstat: %v", eerr)
+		log.Errorf("error on executing kstat: %v", eerr)
 	}
 	perr := e.parseKstatCPUListOutput(string(out))
 	if perr != nil {
-		fmt.Errorf("error on parsing kstat CPU list: %v", perr)
+		log.Errorf("error on parsing kstat CPU list: %v", perr)
 	}
 }
 
 func (e *ZoneKstatCollector) kstatMemList() {
 	out, eerr := exec.Command("kstat", "-p", "-c", "zone_memory_cap").Output()
 	if eerr != nil {
-		fmt.Errorf("error on executing kstat: %v", eerr)
+		log.Errorf("error on executing kstat: %v", eerr)
 	}
 	perr := e.parseKstatMemListOutput(string(out))
 	if perr != nil {
-		fmt.Errorf("error on parsing kstat Mem list: %v", perr)
+		log.Errorf("error on parsing kstat Mem list: %v", perr)
 	}
 }
 
 func (e *ZoneKstatCollector) kstatNICList() {
 	out, eerr := exec.Command("kstat", "-p", "-m", "link").Output()
 	if eerr != nil {
-		fmt.Errorf("error on executing kstat: %v", eerr)
+		log.Errorf("error on executing kstat: %v", eerr)
 	}
 	perr := e.parseKstatNICListOutput(string(out))
 	if perr != nil {
-		fmt.Errorf("error on parsing kstat NIC list: %v", perr)
+		log.Errorf("error on parsing kstat NIC list: %v", perr)
 	}
 }
 

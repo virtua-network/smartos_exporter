@@ -7,12 +7,12 @@
 package collector
 
 import (
-	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
 	// Prometheus Go toolset
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/log"
 )
 
 // ZoneDfCollector declares the data type within the prometheus metrics package.
@@ -66,11 +66,11 @@ func (e *ZoneDfCollector) Collect(ch chan<- prometheus.Metric) {
 func (e *ZoneDfCollector) dfList() {
 	out, eerr := exec.Command("df").Output()
 	if eerr != nil {
-		fmt.Errorf("error on executing df: %v", eerr)
+		log.Errorf("error on executing df: %v", eerr)
 	}
 	perr := e.parseDfListOutput(string(out))
 	if perr != nil {
-		fmt.Errorf("error on parsing df output: %v", perr)
+		log.Errorf("error on parsing df output: %v", perr)
 	}
 }
 

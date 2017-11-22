@@ -7,12 +7,12 @@
 package collector
 
 import (
-	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
 	// Prometheus Go toolset
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/log"
 )
 
 // GZDiskErrorsCollector declares the data type within the prometheus metrics package.
@@ -45,11 +45,11 @@ func (e *GZDiskErrorsCollector) Collect(ch chan<- prometheus.Metric) {
 func (e *GZDiskErrorsCollector) iostat() {
 	out, eerr := exec.Command("iostat", "-en").Output()
 	if eerr != nil {
-		fmt.Errorf("error on executing iostat: %v", eerr)
+		log.Errorf("error on executing iostat: %v", eerr)
 	}
 	perr := e.parseIostatOutput(string(out))
 	if perr != nil {
-		fmt.Errorf("error on parsing iostat: %v", perr)
+		log.Errorf("error on parsing iostat: %v", perr)
 	}
 }
 

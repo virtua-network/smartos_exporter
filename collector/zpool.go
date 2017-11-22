@@ -7,12 +7,12 @@
 package collector
 
 import (
-	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
 	// Prometheus Go toolset
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/log"
 )
 
 // GZZpoolListCollector declares the data type within the prometheus metrics package.
@@ -80,11 +80,11 @@ func (e *GZZpoolListCollector) Collect(ch chan<- prometheus.Metric) {
 func (e *GZZpoolListCollector) zpoolList() {
 	out, eerr := exec.Command("zpool", "list", "-p", "zones").Output()
 	if eerr != nil {
-		fmt.Errorf("error on executing zpool: %v", eerr)
+		log.Errorf("error on executing zpool: %v", eerr)
 	}
 	perr := e.parseZpoolListOutput(string(out))
 	if perr != nil {
-		fmt.Errorf("error on parsing zpool: %v", perr)
+		log.Errorf("error on parsing zpool: %v", perr)
 	}
 }
 
