@@ -29,6 +29,12 @@ type ZoneKstatCollector struct {
 	ZoneKstatMemRSS        *prometheus.GaugeVec
 	ZoneKstatNICCollisions *prometheus.GaugeVec
 	ZoneKstatNICIErrors    *prometheus.CounterVec
+	ZoneKstatNICIPackets   *prometheus.CounterVec
+	ZoneKstatNICLinkState  *prometheus.GaugeVec
+	ZoneKstatNICOBytes     *prometheus.CounterVec
+	ZoneKstatNICOErrors    *prometheus.CounterVec
+	ZoneKstatNICOPackets   *prometheus.CounterVec
+	ZoneKstatNICRBytes     *prometheus.CounterVec
 	ZoneKstatSwapCap       *prometheus.GaugeVec
 	ZoneKstatSwapFree      *prometheus.GaugeVec
 	ZoneKstatSwapUsed      *prometheus.GaugeVec
@@ -88,7 +94,31 @@ func NewZoneKstatExporter() (*ZoneKstatCollector, error) {
 		}, []string{"zonename", "device"}),
 		ZoneKstatNICIErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "smartos_network_receive_errs_total",
-			Help: "Receive errors.",
+			Help: "Received errors.",
+		}, []string{"zonename", "device"}),
+		ZoneKstatNICIPackets: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "smartos_network_receive_packets_total",
+			Help: "Frames received successfully.",
+		}, []string{"zonename", "device"}),
+		ZoneKstatNICLinkState: prometheus.NewGaugeVec(prometheus.CounterOpts{
+			Name: "smartos_network_link_state",
+			Help: "Link state; 0 for down, 1 for up.",
+		}, []string{"zonename", "device"}),
+		ZoneKstatNICOBytes: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "smartos_network_transmit_bytes_total",
+			Help: "Bytes (octets) transmitted successfully.",
+		}, []string{"zonename", "device"}),
+		ZoneKstatNICOErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "smartos_network_transmit_errs_total",
+			Help: "Transmit errors.",
+		}, []string{"zonename", "device"}),
+		ZoneKstatNICOPackets: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "smartos_network_transmit_packets_total",
+			Help: "Frames successfully transmitted.",
+		}, []string{"zonename", "device"}),
+		ZoneKstatNICRBytes: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "smartos_network_receive_bytes_total",
+			Help: "Bytes (octets) received successfully.",
 		}, []string{"zonename", "device"}),
 		ZoneKstatSwapCap: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "smartos_memory_swap_cap_bytes",
@@ -118,6 +148,12 @@ func (e *ZoneKstatCollector) Describe(ch chan<- *prometheus.Desc) {
 	e.ZoneKstatMemRSS.Describe(ch)
 	e.ZoneKstatNICCollisions.Describe(ch)
 	e.ZoneKstatNICIErrors.Describe(ch)
+	e.ZoneKstatNICIPackets.Describe(ch)
+	e.ZoneKstatNICLinkState.Describe(ch)
+	e.ZoneKstatNICOBytes.Describe(ch)
+	e.ZoneKstatNICOErrors.Describe(ch)
+	e.ZoneKstatNICOPackets.Describe(ch)
+	e.ZoneKstatNICRBytes.Describe(ch)
 	e.ZoneKstatSwapCap.Describe(ch)
 	e.ZoneKstatSwapFree.Describe(ch)
 	e.ZoneKstatSwapUsed.Describe(ch)
@@ -139,6 +175,12 @@ func (e *ZoneKstatCollector) Collect(ch chan<- prometheus.Metric) {
 	e.ZoneKstatMemRSS.Collect(ch)
 	e.ZoneKstatNICCollisions.Collect(ch)
 	e.ZoneKstatNICIErrors.Collect(ch)
+	e.ZoneKstatNICIPackets.Collect(ch)
+	e.ZoneKstatNICLinkState.Collect(ch)
+	e.ZoneKstatNICOBytes.Collect(ch)
+	e.ZoneKstatNICOErrors.Collect(ch)
+	e.ZoneKstatNICOPackets.Collect(ch)
+	e.ZoneKstatNICRBytes.Collect(ch)
 	e.ZoneKstatSwapCap.Collect(ch)
 	e.ZoneKstatSwapFree.Collect(ch)
 	e.ZoneKstatSwapUsed.Collect(ch)
@@ -314,37 +356,61 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
 			).Add(ierrors)
 		}
+		if k.ifLabel == "ipackets64" {
+			ipackets64, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "ipackets64"}], 64)
+			if err != nil {
+				return err
+			}
+			e.ZoneKstatNICIPackets.With(
+				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
+			).Add(ipackets64)
+		}
+		if k.ifLabel == "link_state" {
+			linkState, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "link_state"}], 64)
+			if err != nil {
+				return err
+			}
+			e.ZoneKstatNICLinkState.With(
+				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
+			).Set(linkState)
+		}
+		if k.ifLabel == "obytes64" {
+			obytes64, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "obytes64"}], 64)
+			if err != nil {
+				return err
+			}
+			e.ZoneKstatNICOBytes.With(
+				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
+			).Add(obytes64)
+		}
+		if k.ifLabel == "oerrors" {
+			oerrors, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "oerrors"}], 64)
+			if err != nil {
+				return err
+			}
+			e.ZoneKstatNICOErrors.With(
+				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
+			).Add(oerrors)
+		}
+		if k.ifLabel == "opackets64" {
+			opackets64, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "opackets64"}], 64)
+			if err != nil {
+				return err
+			}
+			e.ZoneKstatNICOPackets.With(
+				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
+			).Add(opackets64)
+		}
+		if k.ifLabel == "rbytes64" {
+			rbytes64, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "rbytes64"}], 64)
+			if err != nil {
+				return err
+			}
+			e.ZoneKstatNICRBytes.With(
+				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
+			).Add(rbytes64)
+		}
 	}
-
-	// RESERVED
-	//ierrors, err := strconv.ParseFloat(m["ierrors"], 64)
-	//if err != nil {
-	//	return err
-	//}
-	//ipackets64, err := strconv.ParseFloat(m["ipackets64"], 64)
-	//if err != nil {
-	//	return err
-	//}
-	//link_state, err := strconv.ParseFloat(m["link_state"], 64)
-	//if err != nil {
-	//	return err
-	//}
-	//obytes64, err := strconv.ParseFloat(m["obytes64"], 64)
-	//if err != nil {
-	//	return err
-	//}
-	//oerrors, err := strconv.ParseFloat(m["oerrors"], 64)
-	//if err != nil {
-	//	return err
-	//}
-	//opackets64, err := strconv.ParseFloat(m["opackets64"], 64)
-	//if err != nil {
-	//	return err
-	//}
-	//rbytes64, err := strconv.ParseFloat(m["rbytes64"], 64)
-	//if err != nil {
-	//	return err
-	//}
 
 	return nil
 }
