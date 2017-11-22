@@ -7,13 +7,13 @@
 package collector
 
 import (
-	"fmt"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
 	// Prometheus Go toolset
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/log"
 )
 
 // GZCPUUsageCollector declare the data type within the prometheus metrics
@@ -49,11 +49,11 @@ func (e *GZCPUUsageCollector) mpstat() {
 	// use of mpstat will wait 2 seconds in order to collect statistics
 	out, eerr := exec.Command("mpstat", "1", "2").Output()
 	if eerr != nil {
-		fmt.Errorf("error on executing mpstat: %v", eerr)
+		log.Errorf("error on executing mpstat: %v", eerr)
 	}
 	perr := e.parseMpstatOutput(string(out))
 	if perr != nil {
-		fmt.Errorf("error on parsing mpstat: %v", perr)
+		log.Errorf("error on parsing mpstat: %v", perr)
 	}
 }
 

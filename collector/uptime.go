@@ -7,12 +7,12 @@
 package collector
 
 import (
-	"fmt"
 	"os/exec"
 	"regexp"
 	"strconv"
 	// Prometheus Go toolset
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/log"
 )
 
 // LoadAverageCollector declares the data type within the prometheus metrics
@@ -60,11 +60,11 @@ func (e *LoadAverageCollector) Collect(ch chan<- prometheus.Metric) {
 func (e *LoadAverageCollector) uptime() {
 	out, eerr := exec.Command("uptime").Output()
 	if eerr != nil {
-		fmt.Errorf("error on executing uptime: %v", eerr)
+		log.Errorf("error on executing uptime: %v", eerr)
 	}
 	perr := e.parseUptimeOutput(string(out))
 	if perr != nil {
-		fmt.Errorf("error on parsing uptime: %v", perr)
+		log.Errorf("error on parsing uptime: %v", perr)
 	}
 }
 

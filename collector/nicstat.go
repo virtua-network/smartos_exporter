@@ -7,12 +7,12 @@
 package collector
 
 import (
-	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
 	// Prometheus Go toolset
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/log"
 )
 
 // GZMLAGUsageCollector declares the data type within the prometheus metrics
@@ -55,11 +55,11 @@ func (e *GZMLAGUsageCollector) nicstat() {
 	// use of nicstat will wait 2 seconds in order to collect statistics
 	out, eerr := exec.Command("nicstat", "-i", "aggr0", "1", "2").Output()
 	if eerr != nil {
-		fmt.Errorf("error on executing nicstat: %v", eerr)
+		log.Errorf("error on executing nicstat: %v", eerr)
 	}
 	perr := e.parseNicstatOutput(string(out))
 	if perr != nil {
-		fmt.Errorf("error on parsing nicstat: %v", perr)
+		log.Errorf("error on parsing nicstat: %v", perr)
 	}
 }
 
