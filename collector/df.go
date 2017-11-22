@@ -66,11 +66,11 @@ func (e *ZoneDfCollector) Collect(ch chan<- prometheus.Metric) {
 func (e *ZoneDfCollector) dfList() {
 	out, eerr := exec.Command("df").Output()
 	if eerr != nil {
-		log.Fatal(eerr)
+		log.Errorf("error on executing df: %v", eerr)
 	}
 	perr := e.parseDfListOutput(string(out))
 	if perr != nil {
-		log.Fatal(perr)
+		log.Errorf("error on parsing df output: %v", perr)
 	}
 }
 

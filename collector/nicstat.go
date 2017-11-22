@@ -55,11 +55,11 @@ func (e *GZMLAGUsageCollector) nicstat() {
 	// use of nicstat will wait 2 seconds in order to collect statistics
 	out, eerr := exec.Command("nicstat", "-i", "aggr0", "1", "2").Output()
 	if eerr != nil {
-		log.Fatal(eerr)
+		log.Errorf("error on executing nicstat: %v", eerr)
 	}
 	perr := e.parseNicstatOutput(string(out))
 	if perr != nil {
-		log.Fatal(perr)
+		log.Errorf("error on parsing nicstat: %v", perr)
 	}
 }
 

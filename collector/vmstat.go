@@ -47,11 +47,11 @@ func (e *GZFreeMemCollector) vmstat() {
 	// use of vmstat will wait 2 seconds in order to collect statistics
 	out, eerr := exec.Command("vmstat", "1", "2").Output()
 	if eerr != nil {
-		log.Fatal(eerr)
+		log.Errorf("error on executing vmstat: %v", eerr)
 	}
 	perr := e.parseVmstatOutput(string(out))
 	if perr != nil {
-		log.Fatal(perr)
+		log.Errorf("error on parsing vmstat: %v", perr)
 	}
 }
 
