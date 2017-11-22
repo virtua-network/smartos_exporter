@@ -45,11 +45,11 @@ func (e *GZDiskErrorsCollector) Collect(ch chan<- prometheus.Metric) {
 func (e *GZDiskErrorsCollector) iostat() {
 	out, eerr := exec.Command("iostat", "-en").Output()
 	if eerr != nil {
-		log.Errorf("error on executing iostat: %v", eerr)
+		fmt.Errorf("error on executing iostat: %v", eerr)
 	}
 	perr := e.parseIostatOutput(string(out))
 	if perr != nil {
-		log.Errorf("error on parsing iostat: %v", perr)
+		fmt.Errorf("error on parsing iostat: %v", perr)
 	}
 }
 

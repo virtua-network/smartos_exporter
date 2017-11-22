@@ -80,11 +80,11 @@ func (e *GZZpoolListCollector) Collect(ch chan<- prometheus.Metric) {
 func (e *GZZpoolListCollector) zpoolList() {
 	out, eerr := exec.Command("zpool", "list", "-p", "zones").Output()
 	if eerr != nil {
-		log.Errorf("error on executing zpool: %v", eerr)
+		fmt.Errorf("error on executing zpool: %v", eerr)
 	}
 	perr := e.parseZpoolListOutput(string(out))
 	if perr != nil {
-		log.Errorf("error on parsing zpool: %v", perr)
+		fmt.Errorf("error on parsing zpool: %v", perr)
 	}
 }
 

@@ -49,11 +49,11 @@ func (e *GZCPUUsageCollector) mpstat() {
 	// use of mpstat will wait 2 seconds in order to collect statistics
 	out, eerr := exec.Command("mpstat", "1", "2").Output()
 	if eerr != nil {
-		log.Errorf("error on executing mpstat: %v", eerr)
+		fmt.Errorf("error on executing mpstat: %v", eerr)
 	}
 	perr := e.parseMpstatOutput(string(out))
 	if perr != nil {
-		log.Errorf("error on parsing mpstat: %v", perr)
+		fmt.Errorf("error on parsing mpstat: %v", perr)
 	}
 }
 
