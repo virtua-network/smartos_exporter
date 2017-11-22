@@ -28,13 +28,13 @@ type ZoneKstatCollector struct {
 	ZoneKstatMemPagedOut   *prometheus.GaugeVec
 	ZoneKstatMemRSS        *prometheus.GaugeVec
 	ZoneKstatNICCollisions *prometheus.GaugeVec
-	ZoneKstatNICIErrors    *prometheus.CounterVec
-	ZoneKstatNICIPackets   *prometheus.CounterVec
+	ZoneKstatNICIErrors    *prometheus.GaugeVec
+	ZoneKstatNICIPackets   *prometheus.GaugeVec
 	ZoneKstatNICLinkState  *prometheus.GaugeVec
-	ZoneKstatNICOBytes     *prometheus.CounterVec
-	ZoneKstatNICOErrors    *prometheus.CounterVec
-	ZoneKstatNICOPackets   *prometheus.CounterVec
-	ZoneKstatNICRBytes     *prometheus.CounterVec
+	ZoneKstatNICOBytes     *prometheus.GaugeVec
+	ZoneKstatNICOErrors    *prometheus.GaugeVec
+	ZoneKstatNICOPackets   *prometheus.GaugeVec
+	ZoneKstatNICRBytes     *prometheus.GaugeVec
 	ZoneKstatSwapCap       *prometheus.GaugeVec
 	ZoneKstatSwapFree      *prometheus.GaugeVec
 	ZoneKstatSwapUsed      *prometheus.GaugeVec
@@ -92,11 +92,11 @@ func NewZoneKstatExporter() (*ZoneKstatCollector, error) {
 			Name: "smartos_network_collisions",
 			Help: "Entire amount of collisions.",
 		}, []string{"zonename", "device"}),
-		ZoneKstatNICIErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
+		ZoneKstatNICIErrors: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "smartos_network_receive_errs_total",
 			Help: "Received errors.",
 		}, []string{"zonename", "device"}),
-		ZoneKstatNICIPackets: prometheus.NewCounterVec(prometheus.CounterOpts{
+		ZoneKstatNICIPackets: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "smartos_network_receive_packets_total",
 			Help: "Frames received successfully.",
 		}, []string{"zonename", "device"}),
@@ -104,19 +104,19 @@ func NewZoneKstatExporter() (*ZoneKstatCollector, error) {
 			Name: "smartos_network_link_state",
 			Help: "Link state; 0 for down, 1 for up.",
 		}, []string{"zonename", "device"}),
-		ZoneKstatNICOBytes: prometheus.NewCounterVec(prometheus.CounterOpts{
+		ZoneKstatNICOBytes: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "smartos_network_transmit_bytes_total",
 			Help: "Bytes (octets) transmitted successfully.",
 		}, []string{"zonename", "device"}),
-		ZoneKstatNICOErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
+		ZoneKstatNICOErrors: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "smartos_network_transmit_errs_total",
 			Help: "Transmit errors.",
 		}, []string{"zonename", "device"}),
-		ZoneKstatNICOPackets: prometheus.NewCounterVec(prometheus.CounterOpts{
+		ZoneKstatNICOPackets: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "smartos_network_transmit_packets_total",
 			Help: "Frames successfully transmitted.",
 		}, []string{"zonename", "device"}),
-		ZoneKstatNICRBytes: prometheus.NewCounterVec(prometheus.CounterOpts{
+		ZoneKstatNICRBytes: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "smartos_network_receive_bytes_total",
 			Help: "Bytes (octets) received successfully.",
 		}, []string{"zonename", "device"}),
@@ -354,7 +354,7 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 			}
 			e.ZoneKstatNICIErrors.With(
 				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
-			).Add(ierrors)
+			).Set(ierrors)
 		}
 		if k.ifLabel == "ipackets64" {
 			ipackets64, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "ipackets64"}], 64)
@@ -363,7 +363,7 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 			}
 			e.ZoneKstatNICIPackets.With(
 				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
-			).Add(ipackets64)
+			).Set(ipackets64)
 		}
 		if k.ifLabel == "link_state" {
 			linkState, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "link_state"}], 64)
@@ -381,7 +381,7 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 			}
 			e.ZoneKstatNICOBytes.With(
 				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
-			).Add(obytes64)
+			).Set(obytes64)
 		}
 		if k.ifLabel == "oerrors" {
 			oerrors, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "oerrors"}], 64)
@@ -390,7 +390,7 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 			}
 			e.ZoneKstatNICOErrors.With(
 				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
-			).Add(oerrors)
+			).Set(oerrors)
 		}
 		if k.ifLabel == "opackets64" {
 			opackets64, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "opackets64"}], 64)
@@ -399,7 +399,7 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 			}
 			e.ZoneKstatNICOPackets.With(
 				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
-			).Add(opackets64)
+			).Set(opackets64)
 		}
 		if k.ifLabel == "rbytes64" {
 			rbytes64, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "rbytes64"}], 64)
@@ -408,7 +408,7 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 			}
 			e.ZoneKstatNICRBytes.With(
 				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
-			).Add(rbytes64)
+			).Set(rbytes64)
 		}
 	}
 
