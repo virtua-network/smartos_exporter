@@ -100,7 +100,7 @@ func NewZoneKstatExporter() (*ZoneKstatCollector, error) {
 			Name: "smartos_network_receive_packets_total",
 			Help: "Frames received successfully.",
 		}, []string{"zonename", "device"}),
-		ZoneKstatNICLinkState: prometheus.NewGaugeVec(prometheus.CounterOpts{
+		ZoneKstatNICLinkState: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "smartos_network_link_state",
 			Help: "Link state; 0 for down, 1 for up.",
 		}, []string{"zonename", "device"}),
