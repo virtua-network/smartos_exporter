@@ -47,7 +47,7 @@ func (e *GZCPUUsageCollector) Collect(ch chan<- prometheus.Metric) {
 func (e *GZCPUUsageCollector) mpstat() {
 	// XXX needs enhancement :
 	// use of mpstat will wait 2 seconds in order to collect statistics
-	out, eerr := exec.Command("mpstat", "1", "2").Output()
+	out, eerr := exec.Command("bash", "-c", "mpstat 1 2").Output()
 	if eerr != nil {
 		log.Errorf("error on executing mpstat: %v", eerr)
 	}
