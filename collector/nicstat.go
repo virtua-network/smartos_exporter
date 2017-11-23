@@ -53,7 +53,7 @@ func (e *GZMLAGUsageCollector) Collect(ch chan<- prometheus.Metric) {
 func (e *GZMLAGUsageCollector) nicstat() {
 	// XXX needs enhancement :
 	// use of nicstat will wait 2 seconds in order to collect statistics
-	out, eerr := exec.Command("nicstat", "-i", "aggr0", "1", "2").Output()
+	out, eerr := exec.Command("bash", "-c", "nicstat", "-i", "aggr0", "1", "2").Output()
 	if eerr != nil {
 		log.Errorf("error on executing nicstat: %v", eerr)
 	}
