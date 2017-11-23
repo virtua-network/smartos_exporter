@@ -187,7 +187,7 @@ func (e *ZoneKstatCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (e *ZoneKstatCollector) kstatCPUList() {
-	out, eerr := exec.Command("bash", "-c", "kstat", "-p", "-c", "zone_caps", "-n", "cpucaps_zone*").Output()
+	out, eerr := exec.Command("bash", "-c", "kstat -p -c zone_caps -n cpucaps_zone*").Output()
 	if eerr != nil {
 		log.Errorf("error on executing kstat: %v", eerr)
 	}
@@ -198,7 +198,7 @@ func (e *ZoneKstatCollector) kstatCPUList() {
 }
 
 func (e *ZoneKstatCollector) kstatMemList() {
-	out, eerr := exec.Command("bash", "-c", "kstat", "-p", "-c", "zone_memory_cap").Output()
+	out, eerr := exec.Command("bash", "-c", "kstat -p -c zone_memory_cap").Output()
 	if eerr != nil {
 		log.Errorf("error on executing kstat: %v", eerr)
 	}
@@ -209,7 +209,7 @@ func (e *ZoneKstatCollector) kstatMemList() {
 }
 
 func (e *ZoneKstatCollector) kstatNICList() {
-	out, eerr := exec.Command("bash", "-c", "kstat", "-p", "-m", "link").Output()
+	out, eerr := exec.Command("bash", "-c", "kstat -p -m link").Output()
 	if eerr != nil {
 		log.Errorf("error on executing kstat: %v", eerr)
 	}
