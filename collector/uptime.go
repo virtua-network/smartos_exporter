@@ -58,7 +58,7 @@ func (e *LoadAverageCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (e *LoadAverageCollector) uptime() {
-	out, eerr := exec.Command("bash", "-c", "uptime").Output()
+	out, eerr := exec.Command("uptime").Output()
 	if eerr != nil {
 		log.Errorf("error on executing uptime: %v", eerr)
 	}

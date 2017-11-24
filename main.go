@@ -43,7 +43,7 @@ func init() {
 // return 1 if in GZ
 //        0 if in zone
 func isGlobalZone() int {
-	out, eerr := exec.Command("bash", "-c", "zonename").Output()
+	out, eerr := exec.Command("zonename").Output()
 	if eerr != nil {
 		log.Fatal(eerr)
 	}
