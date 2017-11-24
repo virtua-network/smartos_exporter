@@ -64,7 +64,7 @@ func (e *ZoneDfCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (e *ZoneDfCollector) dfList() {
-	out, eerr := exec.Command("bash", "-c", "df").Output()
+	out, eerr := exec.Command("df").Output()
 	if eerr != nil {
 		log.Errorf("error on executing df: %v", eerr)
 	}
