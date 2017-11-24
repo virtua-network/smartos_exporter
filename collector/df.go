@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 	// Prometheus Go toolset
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
@@ -64,6 +65,9 @@ func (e *ZoneDfCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (e *ZoneDfCollector) dfList() {
+	// on Brand LX zone the call to waitid causes a SIG_ABRT when certain
+	// conditions are met. On speedy command, introducing a sleep seems to help.
+	time.Sleep(100 * time.Millisecond)
 	out, eerr := exec.Command("df").Output()
 	if eerr != nil {
 		log.Errorf("error on executing df: %v", eerr)
