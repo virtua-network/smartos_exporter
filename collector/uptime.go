@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+	"time"
 	// Prometheus Go toolset
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
@@ -58,6 +59,9 @@ func (e *LoadAverageCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (e *LoadAverageCollector) uptime() {
+	// on Brand LX zone the call to waitid causes a SIG_ABRT when certain
+	// conditions are met. On speedy command, introducing a sleep seems to help.
+	time.Sleep(100 * time.Millisecond)
 	out, eerr := exec.Command("uptime").Output()
 	if eerr != nil {
 		log.Errorf("error on executing uptime: %v", eerr)
