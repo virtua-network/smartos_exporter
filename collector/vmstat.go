@@ -45,7 +45,7 @@ func (e *GZFreeMemCollector) Collect(ch chan<- prometheus.Metric) {
 func (e *GZFreeMemCollector) vmstat() {
 	// XXX needs enhancement :
 	// use of vmstat will wait 2 seconds in order to collect statistics
-	out, eerr := exec.Command("vmstat", "1 2").Output()
+	out, eerr := exec.Command("vmstat", "1", "2").Output()
 	if eerr != nil {
 		log.Errorf("error on executing vmstat: %v", eerr)
 	}
