@@ -93,6 +93,16 @@ func (e *GZZpoolListCollector) parseZpoolListOutput(out string) error {
 	l := len(outlines)
 	for _, line := range outlines[1 : l-1] {
 		parsedLine := strings.Fields(line)
+		// handle different version of zpool output (CKPOINT)
+		// lazy version : just shift the variable assignation when needed
+		// only two cases are handled currently :
+		//	fieldNumber = 10 -> zpool output WITHOUT CKPOINT feature
+		//	fieldNumber = 11 -> zpool output WITH CKPOINT feature
+		fieldNumber := len(parsedLine)
+		n := 0
+		if fieldNumber == 11 {
+			n = 1
+		}
 		sizeBytes, err := strconv.ParseFloat(parsedLine[1], 64)
 		if err != nil {
 			return err
@@ -105,17 +115,17 @@ func (e *GZZpoolListCollector) parseZpoolListOutput(out string) error {
 		if err != nil {
 			return err
 		}
-		fragPercent := strings.TrimSuffix(parsedLine[5], "%")
+		fragPercent := strings.TrimSuffix(parsedLine[5+n], "%")
 		fragPercentTrim, err := strconv.ParseFloat(fragPercent, 64)
 		if err != nil {
 			return err
 		}
-		capPercent := strings.TrimSuffix(parsedLine[6], "%")
+		capPercent := strings.TrimSuffix(parsedLine[6+n], "%")
 		capPercentTrim, err := strconv.ParseFloat(capPercent, 64)
 		if err != nil {
 			return err
 		}
-		health := parsedLine[8]
+		health := parsedLine[8+n]
 		if (strings.Contains(health, "ONLINE")) == true {
 			e.gzZpoolListFaulty.With(prometheus.Labels{"zpool": "zones"}).Set(0)
 		} else {
