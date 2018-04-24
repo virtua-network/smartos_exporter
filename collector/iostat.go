@@ -17,14 +17,14 @@ import (
 
 // GZDiskErrorsCollector declares the data type within the prometheus metrics package.
 type GZDiskErrorsCollector struct {
-	gzDiskErrors *prometheus.CounterVec
+	gzDiskErrors *prometheus.GaugeVec
 }
 
 // NewGZDiskErrorsExporter returns a newly allocated exporter GZDiskErrorsCollector.
 // It exposes the number of hardware disk errors
 func NewGZDiskErrorsExporter() (*GZDiskErrorsCollector, error) {
 	return &GZDiskErrorsCollector{
-		gzDiskErrors: prometheus.NewCounterVec(prometheus.CounterOpts{
+		gzDiskErrors: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "smartos_disk_errs_total",
 			Help: "Number of hardware disk errors.",
 		}, []string{"device", "error_type"}),
@@ -71,9 +71,9 @@ func (e *GZDiskErrorsCollector) parseIostatOutput(out string) error {
 		if err != nil {
 			return err
 		}
-		e.gzDiskErrors.With(prometheus.Labels{"device": deviceName, "error_type": "soft"}).Add(softErr)
-		e.gzDiskErrors.With(prometheus.Labels{"device": deviceName, "error_type": "hard"}).Add(hardErr)
-		e.gzDiskErrors.With(prometheus.Labels{"device": deviceName, "error_type": "trn"}).Add(trnErr)
+		e.gzDiskErrors.With(prometheus.Labels{"device": deviceName, "error_type": "soft"}).Set(softErr)
+		e.gzDiskErrors.With(prometheus.Labels{"device": deviceName, "error_type": "hard"}).Set(hardErr)
+		e.gzDiskErrors.With(prometheus.Labels{"device": deviceName, "error_type": "trn"}).Set(trnErr)
 	}
 	return nil
 }
