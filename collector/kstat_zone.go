@@ -338,7 +338,8 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 	}
 
 	for _, k := range ZoneKstatNICkeys {
-		if k.ifLabel == "collisions" {
+		switch k.ifLabel {
+		case "collisions":
 			collisions, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "collisions"}], 64)
 			if err != nil {
 				return err
@@ -346,8 +347,7 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 			e.ZoneKstatNICCollisions.With(
 				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
 			).Set(collisions)
-		}
-		if k.ifLabel == "ierrors" {
+		case "ierrors":
 			ierrors, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "ierrors"}], 64)
 			if err != nil {
 				return err
@@ -355,8 +355,7 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 			e.ZoneKstatNICIErrors.With(
 				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
 			).Set(ierrors)
-		}
-		if k.ifLabel == "ipackets64" {
+		case "ipackets64":
 			ipackets64, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "ipackets64"}], 64)
 			if err != nil {
 				return err
@@ -364,8 +363,7 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 			e.ZoneKstatNICIPackets.With(
 				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
 			).Set(ipackets64)
-		}
-		if k.ifLabel == "link_state" {
+		case "link_state":
 			linkState, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "link_state"}], 64)
 			if err != nil {
 				return err
@@ -373,8 +371,7 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 			e.ZoneKstatNICLinkState.With(
 				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
 			).Set(linkState)
-		}
-		if k.ifLabel == "obytes64" {
+		case "obytes64":
 			obytes64, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "obytes64"}], 64)
 			if err != nil {
 				return err
@@ -382,8 +379,7 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 			e.ZoneKstatNICOBytes.With(
 				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
 			).Set(obytes64)
-		}
-		if k.ifLabel == "oerrors" {
+		case "oerrors":
 			oerrors, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "oerrors"}], 64)
 			if err != nil {
 				return err
@@ -391,8 +387,7 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 			e.ZoneKstatNICOErrors.With(
 				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
 			).Set(oerrors)
-		}
-		if k.ifLabel == "opackets64" {
+		case "opackets64":
 			opackets64, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "opackets64"}], 64)
 			if err != nil {
 				return err
@@ -400,8 +395,7 @@ func (e *ZoneKstatCollector) parseKstatNICListOutput(out string) error {
 			e.ZoneKstatNICOPackets.With(
 				prometheus.Labels{"zonename": m[ZoneKstatNIC{k.ifName, "zonename"}], "device": k.ifName},
 			).Set(opackets64)
-		}
-		if k.ifLabel == "rbytes64" {
+		case "rbytes64":
 			rbytes64, err := strconv.ParseFloat(m[ZoneKstatNIC{k.ifName, "rbytes64"}], 64)
 			if err != nil {
 				return err
